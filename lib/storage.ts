@@ -136,6 +136,11 @@ export function getGeneratedVideos(): Record<string, string> {
   return {}
 }
 
+export function getGeneratedVideo(skillId: string): string | null {
+  const videos = getGeneratedVideos()
+  return videos[skillId] || null
+}
+
 export function saveGeneratedVideo(skillId: string, videoUrl: string): void {
   const videos = getGeneratedVideos()
   videos[skillId] = videoUrl
@@ -367,29 +372,4 @@ export function clearAllData(): void {
   } catch (error) {
     console.warn("Failed to clear data:", error)
   }
-}
-
-
-
-// Video Generation Caching
-export function getGeneratedVideos(): Record<string, string> {
-    if (typeof window === "undefined") return {}
-    const stored = localStorage.getItem(STORAGE_KEYS.generatedVideos)
-    if (!stored) return {}
-    try {
-        return JSON.parse(stored)
-    } catch {
-        return {}
-    }
-}
-
-export function getGeneratedVideo(skillId: string): string | null {
-    const videos = getGeneratedVideos()
-    return videos[skillId] || null
-}
-
-export function saveGeneratedVideo(skillId: string, videoUrl: string): void {
-    const videos = getGeneratedVideos()
-    videos[skillId] = videoUrl
-    safeSetItem(STORAGE_KEYS.generatedVideos, JSON.stringify(videos))
 }

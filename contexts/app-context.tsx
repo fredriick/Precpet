@@ -52,7 +52,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     avgFluidityScore: 0,
     practiceMinutes: 0,
     skillsLearned: [],
-    lastPractice: null,
+    bookmarkedSkills: [],
+    achievements: [],
+    currentStreak: 0,
+    longestStreak: 0,
+    lastPracticeDate: null,
+    lastPractice: undefined,
   })
   const [sessions, setSessions] = useState<PracticeSession[]>([])
   const [settings, setSettings] = useState<UserSettings>({
