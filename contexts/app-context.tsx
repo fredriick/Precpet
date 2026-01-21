@@ -18,6 +18,7 @@ import {
   updateStreak as updateStreakStorage,
   type UserSettings,
 } from "@/lib/storage"
+import { celebratoryFeedback, playSound } from "@/lib/feedback"
 
 interface AppContextValue {
   // User data
@@ -105,8 +106,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const markSkillLearned = useCallback((skillId: string) => {
     const updated = markLearned(skillId)
+    if (updated.skillsLearned.length > userStats.skillsLearned.length) {
+      playSound("success")
+    }
     setUserStats(updated)
-  }, [])
+  }, [userStats.skillsLearned])
 
   const updateSettings = useCallback((updates: Partial<UserSettings>) => {
     setSettings((prev) => {
@@ -128,8 +132,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const unlockAchievement = useCallback((achievementId: string) => {
     const updated = unlockAchievementStorage(achievementId)
+    // Only play sound if achievement was actually added (check if count increased)
+    if (updated.achievements.length > userStats.achievements.length) {
+      celebratoryFeedback()
+    }
     setUserStats(updated)
-  }, [])
+  }, [userStats.achievements])
 
   const updateStreak = useCallback(() => {
     const updated = updateStreakStorage()

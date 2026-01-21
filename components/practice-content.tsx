@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useApp } from "@/contexts/app-context"
 import { getSkillById, soccerSkills } from "@/lib/skills-database"
+import { celebratoryFeedback } from "@/lib/feedback"
 import { cn } from "@/lib/utils"
 import type { Skill, PracticeSession } from "@/lib/types"
 
@@ -120,11 +121,9 @@ export function PracticeContent() {
       finishSession(currentSession, fluidityHistory)
     }
 
-    // Haptic feedback if enabled
-    if (settings.hapticFeedback && navigator.vibrate) {
-      navigator.vibrate([100, 50, 100, 50, 100])
-    }
-  }, [stopTracking, currentSession, fluidityHistory, finishSession, settings.hapticFeedback])
+    // Unified feedback
+    celebratoryFeedback()
+  }, [stopTracking, currentSession, fluidityHistory, finishSession])
 
   const resetPractice = useCallback(() => {
     setPracticeState("idle")
