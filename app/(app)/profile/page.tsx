@@ -4,8 +4,10 @@ import { useState } from "react"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/contexts/auth-context"
 import { soccerSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
+import { LogoutButton } from "@/components/logout-button"
 
 export default function ProfilePage() {
   const { userStats, settings, updateStats, updateSettings, sessions } = useApp()
@@ -213,6 +215,9 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => updateSettings({ soundEffects: !settings.soundEffects })}
+                role="switch"
+                aria-checked={settings.soundEffects}
+                aria-label="Toggle sound effects"
                 className={cn(
                   "w-12 h-7 rounded-full transition-colors relative",
                   settings.soundEffects ? "bg-primary" : "bg-secondary",
@@ -277,6 +282,11 @@ export default function ProfilePage() {
             <p>Precept v1.0.0</p>
             <p>AI-powered sports skills coach</p>
           </div>
+        </div>
+
+        {/* Sign Out */}
+        <div className="pt-4">
+          <LogoutButton />
         </div>
       </main>
 

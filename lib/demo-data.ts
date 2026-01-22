@@ -10,7 +10,12 @@ export const demoUserStats: UserStats = {
   avgFluidityScore: 62,
   practiceMinutes: 145,
   skillsLearned: ["drag-back", "body-feint"],
-  lastPractice: new Date(Date.now() - 86400000).toISOString(), // yesterday
+  bookmarkedSkills: [],
+  achievements: [],
+  currentStreak: 2,
+  longestStreak: 5,
+  lastPracticeDate: new Date(Date.now() - 86400000).toISOString(), // yesterday
+  lastPractice: new Date(Date.now() - 86400000).toISOString(),
 }
 
 export const demoPracticeSessions: PracticeSession[] = [

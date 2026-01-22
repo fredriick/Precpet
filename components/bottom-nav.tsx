@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   {
-    href: "/",
+    href: "/dashboard",
     label: "Home",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,7 +77,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border safe-area-pb z-40">
+    <nav aria-label="Main navigation" className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border safe-area-pb z-40">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href

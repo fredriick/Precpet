@@ -30,11 +30,11 @@ export default function ExportPage() {
                 return
             }
 
-            const success = importUserData(importData)
-            if (success) {
+            const result = importUserData(importData)
+            if (result.success) {
                 setStatus({ type: "success", message: "Data imported successfully! Reloading..." })
                 setTimeout(() => {
-                    window.location.href = "/"
+                    window.location.href = "/dashboard"
                 }, 1500)
             } else {
                 setStatus({ type: "error", message: "Invalid data format." })
@@ -47,7 +47,7 @@ export default function ExportPage() {
     const handleClear = () => {
         if (confirm("Are you sure? This will delete ALL your progress, badges, and settings. This cannot be undone.")) {
             clearAllData()
-            window.location.href = "/"
+            window.location.href = "/dashboard"
         }
     }
 

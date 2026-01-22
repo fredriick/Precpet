@@ -5,9 +5,10 @@ import { notFound, useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { getSkillById } from "@/lib/skills-database"
-import { demoUserStats } from "@/lib/demo-data"
+
 import { useVideoGeneration } from "@/hooks/use-video-generation"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/contexts/app-context"
 
 interface SkillDetailPageProps {
   params: Promise<{ id: string }>
@@ -22,6 +23,7 @@ const difficultyColors = {
 export default function SkillDetailPage({ params }: SkillDetailPageProps) {
   const { id } = use(params)
   const router = useRouter()
+  const { userStats } = useApp()
   const skill = getSkillById(id)
   if (!skill) {
     notFound()
@@ -31,7 +33,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
   // Re-checking skill existence here for type safety is fine as notFound() throws
   const { isGenerating, videoUrl, error, progress, generateVideo } = useVideoGeneration(skill.id)
 
-  const isLearned = demoUserStats.skillsLearned.includes(skill.id)
+  const isLearned = userStats.skillsLearned.includes(skill.id)
 
   const handleGenerateVideo = () => {
     generateVideo(skill.visualScript, skill.id)

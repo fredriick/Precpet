@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 // Veo API configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-interface VideoGenerationRequest {
-  prompt: string
-  skillId: string
-}
+const generateVideoSchema = z.object({
+  prompt: z.string().min(1, "Prompt is required").max(1000, "Prompt too long"),
+  skillId: z.string().min(1, "Skill ID is required").max(100, "Skill ID too long"),
+})
 
 interface VideoOperationResponse {
   name: string
@@ -30,12 +31,24 @@ interface VideoOperationResponse {
 
 export async function POST(request: Request) {
   try {
-    const body: VideoGenerationRequest = await request.json()
-    const { prompt, skillId } = body
+    // Body size check
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10)
+    if (contentLength > 100_000) {
+      return NextResponse.json({ error: "Request too large" }, { status: 413 })
+    }
+
+    const body = await request.json()
+    const parsed = generateVideoSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.flatten() },
+        { status: 400 },
+      )
+    }
+
+    const { prompt, skillId } = parsed.data
 
     if (!GEMINI_API_KEY) {
-      // Return a mock response for demo purposes when no API key
-      console.log("[v0] No GEMINI_API_KEY found, returning mock video URL")
       return NextResponse.json({
         success: true,
         videoUrl: `/placeholder-videos/${skillId}.mp4`,
@@ -55,42 +68,54 @@ The video should be:
 - Professional quality, suitable for a sports training app`
 
     // Start video generation with Veo 3.1
-    const generateResponse = await fetch(`${GEMINI_BASE_URL}/models/veo-3.1-generate-preview:predictLongRunning`, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": GEMINI_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        instances: [
-          {
-            prompt: enhancedPrompt,
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60_000)
+
+    try {
+      const generateResponse = await fetch(
+        `${GEMINI_BASE_URL}/models/veo-3.1-generate-preview:predictLongRunning`,
+        {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": GEMINI_API_KEY,
+            "Content-Type": "application/json",
           },
-        ],
-        parameters: {
-          aspectRatio: "9:16", // Portrait for mobile app
-          durationSeconds: "8",
+          body: JSON.stringify({
+            instances: [{ prompt: enhancedPrompt }],
+            parameters: {
+              aspectRatio: "9:16",
+              durationSeconds: "8",
+            },
+          }),
+          signal: controller.signal,
         },
-      }),
-    })
+      )
 
-    if (!generateResponse.ok) {
-      const errorText = await generateResponse.text()
-      console.error("[v0] Veo API error:", errorText)
-      throw new Error(`Veo API error: ${generateResponse.status}`)
+      if (!generateResponse.ok) {
+        const errorText = await generateResponse.text()
+        console.error("[v0] Veo API error:", errorText)
+        throw new Error(`Veo API error: ${generateResponse.status}`)
+      }
+
+      const operationData: VideoOperationResponse = await generateResponse.json()
+      const operationName = operationData.name
+
+      return NextResponse.json({
+        success: true,
+        operationName,
+        status: "generating",
+        message: "Video generation started. Poll the status endpoint to check progress.",
+      })
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    const operationData: VideoOperationResponse = await generateResponse.json()
-    const operationName = operationData.name
-
-    // Return the operation name for polling
-    return NextResponse.json({
-      success: true,
-      operationName,
-      status: "generating",
-      message: "Video generation started. Poll the status endpoint to check progress.",
-    })
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return NextResponse.json(
+        { success: false, error: "Video generation timed out" },
+        { status: 504 },
+      )
+    }
     console.error("[v0] Video generation error:", error)
     return NextResponse.json(
       {

@@ -34,6 +34,7 @@ export function useMotionSensor() {
 
   const motionDataRef = useRef<MotionData[]>([])
   const lastUpdateRef = useRef<number>(0)
+  const isListeningRef = useRef(false)
 
   // Check if DeviceMotion API is supported
   useEffect(() => {
@@ -170,12 +171,13 @@ export function useMotionSensor() {
 
   // Start tracking motion
   const startTracking = useCallback(async () => {
-    if (!isSupported) return false
+    if (!isSupported || isListeningRef.current) return false
 
     const hasPermission = permissionStatus === "granted" || (await requestPermission())
     if (!hasPermission) return false
 
     window.addEventListener("devicemotion", handleMotion)
+    isListeningRef.current = true
     setIsTracking(true)
     return true
   }, [isSupported, permissionStatus, requestPermission, handleMotion])
@@ -183,6 +185,7 @@ export function useMotionSensor() {
   // Stop tracking motion
   const stopTracking = useCallback(() => {
     window.removeEventListener("devicemotion", handleMotion)
+    isListeningRef.current = false
     setIsTracking(false)
     motionDataRef.current = []
     setAnalysis({

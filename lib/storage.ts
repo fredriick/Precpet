@@ -261,10 +261,17 @@ export function isAchievementUnlocked(achievementId: string): boolean {
   return stats.achievements.includes(achievementId)
 }
 
+function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 // Streak Management
 export function updateStreak(): UserStats {
   const stats = getUserStats()
-  const today = new Date().toISOString().split("T")[0] // YYYY-MM-DD format
+  const today = getLocalDateString()
 
   if (!stats.lastPracticeDate) {
     // First practice ever
@@ -272,10 +279,10 @@ export function updateStreak(): UserStats {
     stats.longestStreak = 1
     stats.lastPracticeDate = today
   } else {
-    const lastDate = new Date(stats.lastPracticeDate)
-    const todayDate = new Date(today)
+    const lastDate = new Date(stats.lastPracticeDate + "T00:00:00")
+    const todayDate = new Date(today + "T00:00:00")
     const diffTime = todayDate.getTime() - lastDate.getTime()
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
 
     if (diffDays === 0) {
       // Same day, no change
@@ -308,10 +315,10 @@ export function getStreakStatus(): {
     return { current: 0, longest: 0, daysUntilBreak: 0, isActive: false }
   }
 
-  const lastDate = new Date(stats.lastPracticeDate)
-  const today = new Date()
+  const lastDate = new Date(stats.lastPracticeDate + "T00:00:00")
+  const today = new Date(getLocalDateString() + "T00:00:00")
   const diffTime = today.getTime() - lastDate.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
 
   const isActive = diffDays <= 1
   const daysUntilBreak = isActive ? 1 - diffDays : 0

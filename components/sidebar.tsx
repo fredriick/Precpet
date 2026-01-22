@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
     {
-        href: "/",
+        href: "/dashboard",
         label: "Home",
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,7 +78,7 @@ export function Sidebar() {
     const pathname = usePathname()
 
     return (
-        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col p-6 z-50">
+        <aside aria-label="Sidebar navigation" className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col p-6 z-50">
             <div className="flex items-center gap-3 mb-10 px-2">
                 <PreceptLogo className="w-8 h-8" />
                 <span className="font-bold text-xl tracking-tight">Precept</span>

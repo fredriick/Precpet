@@ -1,0 +1,15 @@
+import { AuthGuard } from "@/components/auth-guard"
+import { Sidebar } from "@/components/sidebar"
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGuard>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1 md:ml-64 relative">
+          {children}
+        </div>
+      </div>
+    </AuthGuard>
+  )
+}

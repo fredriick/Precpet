@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import type { UserStats, PracticeSession } from "@/lib/types"
 import {
   getUserStats,
@@ -19,16 +19,17 @@ import {
   type UserSettings,
 } from "@/lib/storage"
 import { celebratoryFeedback, playSound } from "@/lib/feedback"
+import { getAchievementById, checkAchievementUnlock, achievements as allAchievements } from "@/lib/achievements-database"
+import { AchievementToast } from "@/components/achievement-toast"
+import type { Achievement } from "@/lib/types"
 
 interface AppContextValue {
-  // User data
   userStats: UserStats
   sessions: PracticeSession[]
   settings: UserSettings
-  isOnboarded: boolean
+  isOnboarded: boolean | null
   isLoading: boolean
 
-  // Actions
   updateStats: (updates: Partial<UserStats>) => void
   addSession: (session: PracticeSession) => void
   finishSession: (session: PracticeSession, fluidityScores: number[]) => void
@@ -58,7 +59,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentStreak: 0,
     longestStreak: 0,
     lastPracticeDate: null,
-    lastPractice: undefined,
   })
   const [sessions, setSessions] = useState<PracticeSession[]>([])
   const [settings, setSettings] = useState<UserSettings>({
@@ -67,16 +67,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     practiceReminders: true,
     preferredDifficulty: "all",
   })
-  const [isOnboarded, setIsOnboarded] = useState(true) // Default to true to avoid flash
+  const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  const achievementsRef = useRef<string[]>([])
+  const [toastAchievement, setToastAchievement] = useState<Achievement | null>(null)
 
   // Load data from localStorage on mount
   useEffect(() => {
-    setUserStats(getUserStats())
+    const stats = getUserStats()
+    setUserStats(stats)
     setSessions(getPracticeSessions())
     setSettings(getUserSettings())
     setIsOnboarded(hasCompletedOnboarding())
     setIsLoading(false)
+    achievementsRef.current = [...stats.achievements]
   }, [])
 
   const refreshData = useCallback(() => {
@@ -98,19 +103,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSessions((prev) => [session, ...prev.filter((s) => s.id !== session.id)])
   }, [])
 
-  const finishSession = useCallback((session: PracticeSession, fluidityScores: number[]) => {
-    const { session: completed, stats } = completePracticeSession(session, fluidityScores)
-    setSessions((prev) => [completed, ...prev.filter((s) => s.id !== completed.id)])
-    setUserStats(stats)
-  }, [])
+  const finishSession = useCallback(
+    (session: PracticeSession, fluidityScores: number[]) => {
+      const { session: completed, stats } = completePracticeSession(session, fluidityScores)
+      setSessions((prev) => [completed, ...prev.filter((s) => s.id !== completed.id)])
+      setUserStats(stats)
+      // Update streak on session completion
+      const streakStats = updateStreakStorage()
+      setUserStats((prev) => ({ ...prev, currentStreak: streakStats.currentStreak, longestStreak: streakStats.longestStreak, lastPracticeDate: streakStats.lastPracticeDate }))
+
+      // Check achievements after session
+      const updatedSessions = getPracticeSessions()
+      const newAchievements = allAchievements
+        .filter((a) => checkAchievementUnlock(a.id, stats, updatedSessions))
+        .map((a) => a.id)
+
+      if (newAchievements.length > 0) {
+        newAchievements.forEach((id) => unlockAchievement(id))
+      }
+    },
+    [],
+  )
 
   const markSkillLearned = useCallback((skillId: string) => {
     const updated = markLearned(skillId)
-    if (updated.skillsLearned.length > userStats.skillsLearned.length) {
+    const prev = getUserStats()
+    if (updated.skillsLearned.length > prev.skillsLearned.length) {
       playSound("success")
     }
     setUserStats(updated)
-  }, [userStats.skillsLearned])
+  }, [])
 
   const updateSettings = useCallback((updates: Partial<UserSettings>) => {
     setSettings((prev) => {
@@ -132,12 +154,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const unlockAchievement = useCallback((achievementId: string) => {
     const updated = unlockAchievementStorage(achievementId)
-    // Only play sound if achievement was actually added (check if count increased)
-    if (updated.achievements.length > userStats.achievements.length) {
+    if (updated.achievements.length > achievementsRef.current.length) {
       celebratoryFeedback()
+      const achievement = getAchievementById(achievementId)
+      if (achievement) {
+        setToastAchievement(achievement)
+      }
     }
+    achievementsRef.current = [...updated.achievements]
     setUserStats(updated)
-  }, [userStats.achievements])
+  }, [])
 
   const updateStreak = useCallback(() => {
     const updated = updateStreakStorage()
@@ -165,6 +191,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {toastAchievement && (
+        <AchievementToast
+          achievement={toastAchievement}
+          onClose={() => setToastAchievement(null)}
+        />
+      )}
     </AppContext.Provider>
   )
 }

@@ -41,6 +41,22 @@ export function triggerHaptic(type: HapticType = "light"): void {
     }
 }
 
+/** Shared AudioContext singleton */
+let sharedAudioContext: AudioContext | null = null
+
+function getAudioContext(): AudioContext | null {
+    if (typeof window === "undefined") return null
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return null
+    if (!sharedAudioContext) {
+        sharedAudioContext = new AudioCtx()
+    }
+    if (sharedAudioContext.state === "suspended") {
+        sharedAudioContext.resume()
+    }
+    return sharedAudioContext
+}
+
 /**
  * Play sound effect if enabled in settings
  */
@@ -48,19 +64,16 @@ export function playSound(type: SoundType): void {
     const settings = getUserSettings()
     if (!settings.soundEffects) return
 
-    // Check if Web Audio API is supported
-    if (typeof window === "undefined" || !("AudioContext" in window || "webkitAudioContext" in window)) return
+    const audioContext = getAudioContext()
+    if (!audioContext) return
 
     try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext
-        const audioContext = new AudioContext()
         const oscillator = audioContext.createOscillator()
         const gainNode = audioContext.createGain()
 
         oscillator.connect(gainNode)
         gainNode.connect(audioContext.destination)
 
-        // Configure sound based on type
         switch (type) {
             case "click":
                 oscillator.frequency.value = 800
@@ -70,35 +83,34 @@ export function playSound(type: SoundType): void {
                 break
 
             case "success":
-                oscillator.frequency.value = 523.25 // C5
+                oscillator.frequency.value = 523.25
                 gainNode.gain.value = 0.2
                 oscillator.start()
                 oscillator.stop(audioContext.currentTime + 0.15)
                 break
 
             case "achievement":
-                // Play a cheerful ascending tone
-                oscillator.frequency.value = 523.25 // C5
+                oscillator.frequency.value = 523.25
                 gainNode.gain.value = 0.3
                 oscillator.start()
                 setTimeout(() => {
-                    oscillator.frequency.value = 659.25 // E5
+                    try { oscillator.frequency.value = 659.25 } catch { /* oscillator may already be stopped */ }
                 }, 100)
                 setTimeout(() => {
-                    oscillator.frequency.value = 783.99 // G5
+                    try { oscillator.frequency.value = 783.99 } catch { /* oscillator may already be stopped */ }
                 }, 200)
                 oscillator.stop(audioContext.currentTime + 0.4)
                 break
 
             case "streak":
-                oscillator.frequency.value = 659.25 // E5
+                oscillator.frequency.value = 659.25
                 gainNode.gain.value = 0.25
                 oscillator.start()
                 oscillator.stop(audioContext.currentTime + 0.2)
                 break
 
             case "bookmark":
-                oscillator.frequency.value = 440 // A4
+                oscillator.frequency.value = 440
                 gainNode.gain.value = 0.15
                 oscillator.start()
                 oscillator.stop(audioContext.currentTime + 0.1)

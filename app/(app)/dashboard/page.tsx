@@ -8,19 +8,30 @@ import { Onboarding } from "@/components/onboarding"
 import { StreakWidget } from "@/components/streak-widget"
 import { AchievementBadge } from "@/components/achievement-badge"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
+import { useRecommendation } from "@/hooks/use-recommendation"
 import { useApp } from "@/contexts/app-context"
 import { Button } from "@/components/ui/button"
 import { soccerSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
-import { isPracticeWindow } from "@/lib/demo-data"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
   const { userStats, isOnboarded, isLoading } = useApp()
+  const { recommendation, isLoading: isRecommendationLoading } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
   const [recommendedSkill, setRecommendedSkill] = useState(soccerSkills[0])
+
+  // Show recommendation when it arrives
+  useEffect(() => {
+    if (recommendation && recommendation.action === "RECOMMEND" && recommendation.skill) {
+      setRecommendedSkill(recommendation.skill)
+      setShowRecommendation(true)
+    } else if (recommendation && recommendation.action === "SILENCE") {
+      setShowRecommendation(false)
+    }
+  }, [recommendation])
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -29,35 +40,6 @@ export default function HomePage() {
     if (hour < 18) return "Good afternoon"
     return "Good evening"
   }
-
-  // AI recommendation logic based on user stats
-  useEffect(() => {
-    if (isPracticeWindow()) {
-      // Find skills not yet learned and recommend based on weakness
-      const unlearnedSkills = soccerSkills.filter((s) => !userStats.skillsLearned.includes(s.id))
-
-      if (unlearnedSkills.length > 0) {
-        // Prioritize based on user weaknesses
-        let recommended = unlearnedSkills[0]
-
-        if (userStats.ballLossesUnderPressure > 5) {
-          // Recommend escape moves
-          const escapeSkill = unlearnedSkills.find((s) => s.category === "dribbling" && s.difficulty !== "advanced")
-          if (escapeSkill) recommended = escapeSkill
-        } else if (userStats.successfulDribbles < 10) {
-          // Recommend beginner dribbling
-          const beginnerSkill = unlearnedSkills.find((s) => s.difficulty === "beginner")
-          if (beginnerSkill) recommended = beginnerSkill
-        }
-
-        const timer = setTimeout(() => {
-          setRecommendedSkill(recommended)
-          setShowRecommendation(true)
-        }, 1500)
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [userStats])
 
   // Show loading state
   if (isLoading) {

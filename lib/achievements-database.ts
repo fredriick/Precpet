@@ -25,7 +25,7 @@ export const achievements: Achievement[] = [
     {
         id: "perfect-week",
         name: "Perfect Week",
-        description: "Practice 7 days in a row",
+        description: "Complete 7 practice sessions in 7 days",
         icon: "💯",
         category: "streak",
     },
@@ -86,7 +86,7 @@ export function checkAchievementUnlock(
         currentStreak: number
         achievements: string[]
     },
-    sessions: { completed: boolean; fluidityScores: number[] }[],
+    sessions: { completed: boolean; fluidityScores: number[]; startTime: string }[],
 ): boolean {
     // Already unlocked
     if (userStats.achievements.includes(achievementId)) return false
@@ -103,8 +103,11 @@ export function checkAchievementUnlock(
         case "unstoppable":
             return userStats.currentStreak >= 7
 
-        case "perfect-week":
-            return userStats.currentStreak >= 7
+        case "perfect-week": {
+            const last7Days = new Date()
+            last7Days.setDate(last7Days.getDate() - 7)
+            return completedSessions.filter((s) => new Date(s.startTime) >= last7Days).length >= 7
+        }
 
         case "skill-master":
             return userStats.skillsLearned.length >= 6
@@ -120,12 +123,14 @@ export function checkAchievementUnlock(
 
         case "fluidity-pro":
             return completedSessions.some((s) => {
+                if (s.fluidityScores.length === 0) return false
                 const avg = s.fluidityScores.reduce((a, b) => a + b, 0) / s.fluidityScores.length
                 return avg >= 85
             })
 
         case "perfectionist":
             return completedSessions.some((s) => {
+                if (s.fluidityScores.length === 0) return false
                 const avg = s.fluidityScores.reduce((a, b) => a + b, 0) / s.fluidityScores.length
                 return avg >= 95
             })
