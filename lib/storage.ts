@@ -376,6 +376,16 @@ export function clearAllData(): void {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key)
     })
+    // Also clear auth/session data
+    localStorage.removeItem("precept_auth_user")
+    localStorage.removeItem("precept_session")
+    // Clear all credential entries
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith("precept_cred_")) {
+        localStorage.removeItem(key)
+      }
+    }
   } catch (error) {
     console.warn("Failed to clear data:", error)
   }

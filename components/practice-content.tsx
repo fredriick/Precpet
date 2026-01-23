@@ -77,7 +77,7 @@ export function PracticeContent() {
     if (started) {
       // Create new session
       const session: PracticeSession = {
-        id: `session-${Date.now()}`,
+        id: crypto.randomUUID(),
         skillId: currentSkill.id,
         startTime: new Date().toISOString(),
         fluidityScores: [],

@@ -14,13 +14,15 @@ export default function ExportPage() {
 
     const handleExport = () => {
         const data = exportUserData()
-        // In a real app we might create a file download
-        // For now, copy to clipboard
-        navigator.clipboard.writeText(data).then(() => {
-            setStatus({ type: "success", message: "Data copied to clipboard! Save it somewhere safe." })
-        }).catch(() => {
-            setStatus({ type: "error", message: "Failed to copy to clipboard." })
-        })
+        // Download as file
+        const blob = new Blob([data], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `precept-backup-${new Date().toISOString().split("T")[0]}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+        setStatus({ type: "success", message: "File downloaded! Keep it safe." })
     }
 
     const handleImport = () => {

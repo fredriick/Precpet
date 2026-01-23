@@ -10,6 +10,7 @@ import { AchievementBadge } from "@/components/achievement-badge"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useRecommendation } from "@/hooks/use-recommendation"
 import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { soccerSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils"
 export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
   const { userStats, isOnboarded, isLoading } = useApp()
+  const { user } = useAuth()
   const { recommendation, isLoading: isRecommendationLoading } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
   const [recommendedSkill, setRecommendedSkill] = useState(soccerSkills[0])
@@ -40,6 +42,10 @@ export default function HomePage() {
     if (hour < 18) return "Good afternoon"
     return "Good evening"
   }
+
+  // Latest achievement for display
+  const latestAchievementId = userStats.achievements[userStats.achievements.length - 1]
+  const latestAchievement = latestAchievementId ? achievements.find((a) => a.id === latestAchievementId) : undefined
 
   // Show loading state
   if (isLoading) {
@@ -66,7 +72,7 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <PreceptLogo className="w-9 h-9" />
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, athlete! 👋</h1>
+              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || "athlete"}! 👋</h1>
               <p className="text-xs text-muted-foreground">Let's level up today</p>
             </div>
           </div>
@@ -116,11 +122,13 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="flex justify-center">
-              <AchievementBadge
-                achievement={achievements.find((a) => a.id === userStats.achievements[userStats.achievements.length - 1])!}
-                isUnlocked={true}
-                size="md"
-              />
+              {latestAchievement && (
+                <AchievementBadge
+                  achievement={latestAchievement}
+                  isUnlocked={true}
+                  size="md"
+                />
+              )}
             </div>
           </div>
         )}
