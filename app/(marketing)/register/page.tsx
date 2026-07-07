@@ -40,6 +40,11 @@ export default function RegisterPage() {
 
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-10">
+          <button onClick={() => router.push("/")} className="absolute left-0 top-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_8px_24px_-4px_rgba(16,185,129,0.4)] hover:scale-110 hover:shadow-[0_12px_32px_-4px_rgba(16,185,129,0.5)] active:scale-95 transition-all duration-200" aria-label="Go back to home">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
           <Link href="/" className="inline-flex items-center justify-center gap-3 mb-8 group">
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full" />

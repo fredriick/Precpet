@@ -78,7 +78,7 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Main navigation" className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border safe-area-pb z-40">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto safe-area-inset-bottom">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (

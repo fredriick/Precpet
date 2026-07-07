@@ -76,9 +76,10 @@
   --sidebar-ring: oklch(0.7 0.17 162);
 }
 
-/* Removed custom font-sans definition to use default font loading */
 @theme inline {
+  --font-sans: "Outfit", "Outfit Fallback", system-ui;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-saira: "Saira Stencil One", "Saira Stencil One Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -126,6 +127,9 @@
     @apply bg-background text-foreground;
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
 
   body::before {
@@ -289,5 +293,21 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Mobile overrides */
+  @media (max-width: 767px) {
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .safe-area-inset-bottom {
+      padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    }
+
+    .safe-area-inset-top {
+      padding-top: max(16px, env(safe-area-inset-top, 0px));
+    }
   }
 }

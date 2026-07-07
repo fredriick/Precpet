@@ -373,7 +373,7 @@ export function PracticeContent() {
 
         {/* Bottom Controls */}
         {practiceState !== "complete" && (
-          <div className="fixed bottom-0 left-0 right-0 md:bg-transparent md:static p-4 pb-8 bg-gradient-to-t from-background via-background/95 to-transparent z-30">
+          <div className="fixed bottom-0 left-0 right-0 md:bg-transparent md:static p-4 pb-8 safe-area-pb bg-gradient-to-t from-background via-background/95 to-transparent z-30">
             <div className="max-w-lg md:max-w-5xl mx-auto">
               {practiceState === "idle" && (
                 <Button

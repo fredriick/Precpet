@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useState, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { MeshDistortMaterial, MeshTransmissionMaterial } from "@react-three/drei"
 import * as THREE from "three"
@@ -332,27 +332,56 @@ interface HeroSceneProps {
   scrollProgress?: number
 }
 
+function ResponsiveScene({ mouse, scrollProgress = 0 }: HeroSceneProps) {
+  const groupRef = useRef<THREE.Group>(null)
+  const [isMobile, setIsMobile] = useState<boolean>(typeof window !== "undefined" ? window.innerWidth < 768 : true)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
+  const offsetX = isMobile ? 0 : 2.5
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+    const targetX = offsetX + (scrollProgress * 0.5)
+    groupRef.current.position.x += (targetX - groupRef.current.position.x) * 0.05
+    const targetFov = isMobile ? 65 : 45
+    const cam = state.camera as THREE.PerspectiveCamera
+    cam.fov += (targetFov - cam.fov) * 0.05
+    cam.updateProjectionMatrix()
+  })
+
+  return (
+    <>
+      <color attach="background" args={["#0a0a0f"]} />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1.2} color="#10b981" />
+      <pointLight position={[-10, -10, -10]} intensity={0.6} color="#6366f1" />
+      <directionalLight position={[0, 5, 5]} intensity={0.5} />
+
+      <AmbientParticles mouse={mouse} scrollProgress={scrollProgress} />
+      <BurstParticles scrollProgress={scrollProgress} />
+
+      <group ref={groupRef} position={[0, 0, 0]}>
+        <Field scrollProgress={scrollProgress} />
+        <Goal scrollProgress={scrollProgress} />
+        <SpeedTrails scrollProgress={scrollProgress} />
+        <SportIcons scrollProgress={scrollProgress} />
+        <SoccerBall mouse={mouse} scrollProgress={scrollProgress} />
+      </group>
+    </>
+  )
+}
+
 export function HeroScene({ mouse, scrollProgress = 0 }: HeroSceneProps) {
   return (
     <div className="absolute inset-0">
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]}>
-        <color attach="background" args={["#0a0a0f"]} />
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1.2} color="#10b981" />
-        <pointLight position={[-10, -10, -10]} intensity={0.6} color="#6366f1" />
-        <directionalLight position={[0, 5, 5]} intensity={0.5} />
-
-        <AmbientParticles mouse={mouse} scrollProgress={scrollProgress} />
-        <BurstParticles scrollProgress={scrollProgress} />
-
-        {/* Shift all 3D objects to the right */}
-        <group position={[2.5, 0, 0]}>
-          <Field scrollProgress={scrollProgress} />
-          <Goal scrollProgress={scrollProgress} />
-          <SpeedTrails scrollProgress={scrollProgress} />
-          <SportIcons scrollProgress={scrollProgress} />
-          <SoccerBall mouse={mouse} scrollProgress={scrollProgress} />
-        </group>
+      <Canvas dpr={[1, 2]}>
+        <ResponsiveScene mouse={mouse} scrollProgress={scrollProgress} />
       </Canvas>
     </div>
   )

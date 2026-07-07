@@ -142,7 +142,7 @@ export default function ProgressPage() {
               <p className="text-xs text-muted-foreground">{Math.round((unlockedAchievements.length / achievements.length) * 100)}% Complete</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-y-8 gap-x-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-8 gap-x-4">
               {unlockedAchievements.map((achievement) => (
                 <AchievementBadge
                   key={achievement.id}
@@ -162,7 +162,7 @@ export default function ProgressPage() {
               <>
                 <div className="h-px bg-border/50 my-2" />
                 <h3 className="text-lg font-bold opacity-80">Locked ({lockedAchievements.length})</h3>
-                <div className="grid grid-cols-3 gap-y-8 gap-x-4 opacity-60 grayscale-[0.5]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-8 gap-x-4 opacity-60 grayscale-[0.5]">
                   {lockedAchievements.map((achievement) => (
                     <AchievementBadge
                       key={achievement.id}

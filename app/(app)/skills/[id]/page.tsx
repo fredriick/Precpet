@@ -191,10 +191,10 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
         </div>
 
         {/* Practice CTA */}
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
+        <div className="fixed bottom-16 md:bottom-6 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent md:bg-gradient-to-t md:from-background/95 md:via-background/80 md:to-transparent">
           <div className="max-w-lg mx-auto">
             <Button
-              className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
               onClick={() => router.push(`/practice?skill=${skill.id}`)}
             >
               Practice This Skill

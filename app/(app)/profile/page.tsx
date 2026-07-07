@@ -60,7 +60,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
             <div>
               <p className="text-2xl font-bold font-mono text-primary">{userStats.practiceMinutes}</p>
               <p className="text-xs text-muted-foreground">Minutes</p>

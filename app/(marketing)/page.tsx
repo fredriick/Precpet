@@ -64,10 +64,10 @@ function AnimatedStat({ value, suffix, label, display }: { value: number; suffix
   return (
     <ScrollReveal delay={0.1}>
       <div className="text-center group cursor-default">
-        <div className="text-3xl font-bold bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
+        <div className="text-3xl font-bold bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-300">
           {display ?? (count + suffix)}
         </div>
-        <div className="text-xs text-white/30 mt-1 tracking-wide uppercase">{label}</div>
+        <div className="text-xs text-white/60 mt-1 tracking-wide uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">{label}</div>
       </div>
     </ScrollReveal>
   )
@@ -161,6 +161,8 @@ export default function LandingPage() {
           className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 pt-24 pb-32"
           style={{ y: heroY, opacity: heroOpacity }}
         >
+          {/* Dark backdrop overlay on mobile to improve text readability over 3D scene */}
+          <div className="md:hidden absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/20 via-[#0a0a0f]/60 to-[#0a0a0f]/90 pointer-events-none" />
           <div className="flex flex-col items-end md:items-start max-w-2xl">
             {/* Badge — vertical on the far right edge */}
             <motion.div
@@ -210,27 +212,27 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.h1
-              className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-6"
+              className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-6"
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
             >
               <motion.span
-                className="inline-block"
+                className="inline-block drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
                 animate={{
                   letterSpacing: ["-0.02em", "0.02em", "-0.02em"],
-                  opacity: [0.8, 1, 0.8],
+                  opacity: [0.9, 1, 0.9],
                 }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               >
                 Your{" "}
               </motion.span>
               <motion.span
-                className="inline-block bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 bg-clip-text text-transparent"
+                className="inline-block bg-gradient-to-r from-emerald-300 via-emerald-200 to-white bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(16,185,129,0.5)]"
                 animate={{
                   backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                   scale: [1, 1.02, 1],
-                  filter: ["brightness(1)", "brightness(1.15)", "brightness(1)"],
+                  filter: ["brightness(1)", "brightness(1.2)", "brightness(1)"],
                 }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
                 style={{ backgroundSize: "200% auto" }}
@@ -240,7 +242,7 @@ export default function LandingPage() {
             </motion.h1>
 
             <motion.span
-              className="block text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.95] text-white/80 mb-8"
+              className="block text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.95] text-white/95 mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
@@ -258,7 +260,7 @@ export default function LandingPage() {
             </motion.span>
 
             <motion.p
-              className="text-base md:text-lg text-white/40 max-w-xl mb-10 leading-relaxed"
+              className="text-base md:text-lg text-white/70 md:text-white/40 max-w-xl mb-10 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
               initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.7 }}
@@ -271,8 +273,8 @@ export default function LandingPage() {
                 Motion analysis, personalized training, and skill tracking — all powered by AI.
               </motion.span>{" "}
               <motion.span
-                className="inline-block text-emerald-400/60 font-medium"
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                className="inline-block text-emerald-300/90 font-medium drop-shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
+                animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 2 }}
               >
                 Train smarter, improve faster.
@@ -294,7 +296,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 w-full">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full">
               {stats.map((stat, i) => (
                 <AnimatedStat key={i} {...stat} />
               ))}
