@@ -53,3 +53,21 @@ export interface PracticeSession {
   fluidityScores: number[]
   completed: boolean
 }
+
+export interface ProgramStep {
+  skillId: string
+  duration: number
+  reps: number
+  instruction: string
+}
+
+export interface Program {
+  id: string
+  name: string
+  description: string
+  category: "dribbling" | "passing" | "shooting" | "defending" | "fitness" | "full"
+  difficulty: "beginner" | "intermediate" | "advanced"
+  estimatedMinutes: number
+  steps: ProgramStep[]
+  image?: string
+}
