@@ -43,6 +43,51 @@ const defaultSettings: UserSettings = {
   preferredDifficulty: "all",
 }
 
+const DATA_VERSION_KEY = "precept_data_version"
+const CURRENT_VERSION = 2
+
+function getStoredVersion(): number {
+  const v = safeGetItem(DATA_VERSION_KEY)
+  return v ? parseInt(v, 10) || 0 : 0
+}
+
+function setStoredVersion(version: number): void {
+  safeSetItem(DATA_VERSION_KEY, version.toString())
+}
+
+function migrateIfNeeded(): void {
+  const version = getStoredVersion()
+  if (version >= CURRENT_VERSION) return
+
+  // Migration v0 -> v1: add lastPracticeDate if missing
+  if (version < 1) {
+    const stats = getUserStats()
+    if (!stats.lastPracticeDate && stats.lastPractice) {
+      stats.lastPracticeDate = stats.lastPractice.split("T")[0]
+      saveUserStats(stats)
+    }
+  }
+
+  // Migration v1 -> v2: ensure settings exist
+  if (version < 2) {
+    const settings = safeGetItem(STORAGE_KEYS.settings)
+    if (!settings) {
+      saveUserSettings(defaultSettings)
+    }
+  }
+
+  setStoredVersion(CURRENT_VERSION)
+}
+
+// Run migration on import
+if (typeof window !== "undefined") {
+  try {
+    migrateIfNeeded()
+  } catch {
+    // Silently fail migration
+  }
+}
+
 // Helper to safely access localStorage
 function safeGetItem(key: string): string | null {
   if (typeof window === "undefined") return null

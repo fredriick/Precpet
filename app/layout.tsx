@@ -1,15 +1,13 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Outfit, Saira_Stencil_One } from "next/font/google"
+import { Autour_One } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/contexts/auth-context"
 import { AppProvider } from "@/contexts/app-context"
 import { ServiceWorkerRegister } from "@/components/service-worker-register"
 import "./globals.css"
 
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" })
-
-const sairaStencil = Saira_Stencil_One({ subsets: ["latin"], weight: "400", variable: "--font-saira" })
+const autourOne = Autour_One({ subsets: ["latin"], weight: "400", variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: "Precept - Smart Sports Coach",
@@ -52,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${outfit.variable} ${sairaStencil.variable} font-saira antialiased bg-background text-foreground selection:bg-primary/30`}>
+      <body className={`${autourOne.variable} font-sans antialiased bg-background text-foreground selection:bg-primary/30`}>
         <AuthProvider>
           <AppProvider>
             {children}

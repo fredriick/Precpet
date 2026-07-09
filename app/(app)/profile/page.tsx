@@ -284,6 +284,25 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Storage */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Storage</h3>
+            <span className="text-xs text-muted-foreground">{sessions.length} sessions</span>
+          </div>
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (sessions.length / 50) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            {sessions.length < 50
+              ? `${50 - sessions.length} session slots remaining`
+              : "Session limit reached. Old sessions will be archived."}
+          </p>
+        </div>
+
         {/* Sign Out */}
         <div className="pt-4">
           <LogoutButton />

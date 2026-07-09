@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { exportUserData } from "@/lib/storage"
 
 const AUTH_KEY = "precept_auth_user"
 
@@ -31,6 +32,16 @@ function getStoredUser(): AuthUser | null {
   }
 }
 
+function hashPassword(password: string): string {
+  let hash = 0
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return "h_" + btoa(hash.toString(36))
+}
+
 function setStoredUser(user: AuthUser): void {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user))
 }
@@ -53,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!stored) return false
     try {
       const cred = JSON.parse(stored)
-      if (cred.password === password) {
+      if (cred.password === hashPassword(password)) {
         const authUser: AuthUser = { email, name: cred.name, createdAt: cred.createdAt }
         setStoredUser(authUser)
         setUser(authUser)
@@ -69,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (localStorage.getItem(`precept_cred_${email}`)) return false
 
     const createdAt = new Date().toISOString()
-    localStorage.setItem(`precept_cred_${email}`, JSON.stringify({ name, email, password, createdAt }))
+    localStorage.setItem(`precept_cred_${email}`, JSON.stringify({ name, email, password: hashPassword(password), createdAt }))
 
     const authUser: AuthUser = { email, name, createdAt }
     setStoredUser(authUser)
@@ -78,6 +89,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
+    try {
+      const data = exportUserData()
+      const blob = new Blob([data], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `precept-backup-${new Date().toISOString().split("T")[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      // Silently fail backup
+    }
     removeStoredUser()
     setUser(null)
   }, [])

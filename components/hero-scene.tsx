@@ -326,6 +326,30 @@ function AmbientParticles({ mouse, scrollProgress = 0 }: SportsProps) {
   )
 }
 
+// ─── Ball Glow Ring ──────────────────────────────────────────
+function BallGlow({ scrollProgress = 0 }: { scrollProgress: number }) {
+  const ref = useRef<THREE.Mesh>(null)
+
+  useFrame((state) => {
+    if (!ref.current) return
+    const t = state.clock.getElapsedTime()
+    const s = scrollProgress
+    ref.current.rotation.x = t * 0.3
+    ref.current.rotation.y = t * 0.5 + s
+    ref.current.position.y = -s * 1.5 + Math.sin(t * 0.8 + s * 2) * 0.4
+    ref.current.position.z = -2 - s * 3
+    const breathe = 1 + Math.sin(t * 0.6 + s * 4) * 0.05
+    ref.current.scale.setScalar((1.4 - s * 0.2) * breathe)
+  })
+
+  return (
+    <mesh ref={ref} position={[0, 0, -2]} scale={1.4}>
+      <ringGeometry args={[1.5, 1.8, 48]} />
+      <meshBasicMaterial color="#10b981" transparent opacity={0.15} side={THREE.DoubleSide} depthWrite={false} />
+    </mesh>
+  )
+}
+
 // ─── Exported Scene ──────────────────────────────────────────
 interface HeroSceneProps {
   mouse?: { x: number; y: number }
@@ -371,6 +395,7 @@ function ResponsiveScene({ mouse, scrollProgress = 0 }: HeroSceneProps) {
         <Goal scrollProgress={scrollProgress} />
         <SpeedTrails scrollProgress={scrollProgress} />
         <SportIcons scrollProgress={scrollProgress} />
+        <BallGlow scrollProgress={scrollProgress} />
         <SoccerBall mouse={mouse} scrollProgress={scrollProgress} />
       </group>
     </>

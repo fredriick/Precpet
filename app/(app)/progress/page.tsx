@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { AchievementBadge } from "@/components/achievement-badge"
 import { SessionHistoryList } from "@/components/session-history-list"
 import { StreakWidget } from "@/components/streak-widget"
+import { FluidityTrendChart } from "@/components/fluidity-trend-chart"
 import { useApp } from "@/contexts/app-context"
 import { achievements } from "@/lib/achievements-database"
 import { cn } from "@/lib/utils"
@@ -154,8 +155,10 @@ export default function ProgressPage() {
                 <div className="col-span-3 text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
                   <div className="text-3xl">🔒</div>
                   <p>No badges yet. Start practicing to earn them! 🏅</p>
-                </div>
-              )}
+            {/* Fluidity Trend Chart */}
+            <FluidityTrendChart sessions={sessions} />
+          </div>
+        )}
             </div>
 
             {lockedAchievements.length > 0 && (

@@ -28,6 +28,7 @@ export function PracticeContent() {
   const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [goalMinutes, setGoalMinutes] = useState<number | null>(null)
 
   // Feedback messages based on performance
   const getEncouragement = (fluidity: number) => {
@@ -143,6 +144,8 @@ export function PracticeContent() {
 
   const peakFluidity = fluidityHistory.length > 0 ? Math.max(...fluidityHistory) : 0
 
+  const goalMet = goalMinutes !== null && sessionTime >= goalMinutes * 60
+
   return (
     <div className="min-h-screen bg-background pb-20 relative overflow-hidden">
       {/* Background Blobs */}
@@ -251,6 +254,12 @@ export function PracticeContent() {
             <h2 className="text-2xl font-bold mb-2">Session Complete!</h2>
             <p className="text-muted-foreground mb-8">You crushed that practice session! Here is how you did:</p>
 
+            {goalMinutes && (
+              <div className={cn("mb-6 px-4 py-2 rounded-xl text-sm font-medium inline-block", goalMet ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400")}>
+                {goalMet ? "🎯 Goal met!" : `⏳ ${Math.max(0, goalMinutes - Math.floor(sessionTime / 60))}min to reach your goal`}
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="p-3 bg-secondary/30 rounded-2xl">
                 <p className="text-2xl font-bold font-mono text-primary">{formatTime(sessionTime)}</p>
@@ -352,6 +361,40 @@ export function PracticeContent() {
         {/* Sensor Warnings */}
         {practiceState === "idle" && (
           <>
+            {/* Goal Setting */}
+            {currentSkill && (
+              <div className="rounded-2xl bg-card border border-border p-5">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Set a Goal</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[5, 10, 15].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setGoalMinutes(goalMinutes === mins ? null : mins)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-sm font-medium transition-all border",
+                        goalMinutes === mins
+                          ? "bg-primary/20 border-primary text-primary"
+                          : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      )}
+                    >
+                      {mins} min
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setGoalMinutes(null)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-sm font-medium transition-all border",
+                      goalMinutes === null
+                        ? "bg-secondary border-border text-muted-foreground"
+                        : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                    )}
+                  >
+                    No goal
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!isSupported && (
               <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
                 <span className="text-xl">⚠️</span>

@@ -133,7 +133,7 @@ export default function LandingPage() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <Link href="/login" className="px-5 py-2 text-sm font-medium text-white/60 hover:text-white transition-colors">
+            <Link href="/login" className="px-5 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors">
               Sign In
             </Link>
             <Link href="/register" className="relative group">
@@ -290,7 +290,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto px-10 py-4 text-base font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] rounded-xl transition-all"
+                className="hidden sm:block w-full sm:w-auto px-10 py-4 text-base font-medium text-white bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.2] hover:border-white/[0.3] rounded-xl transition-all"
               >
                 Sign In
               </Link>

@@ -77,9 +77,8 @@
 }
 
 @theme inline {
-  --font-sans: "Outfit", "Outfit Fallback", system-ui;
+  --font-sans: "Autour One", "Autour One Fallback", system-ui;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
-  --font-saira: "Saira Stencil One", "Saira Stencil One Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

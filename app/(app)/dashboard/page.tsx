@@ -11,6 +11,7 @@ import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useRecommendation } from "@/hooks/use-recommendation"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
+import { WeeklyActivityChart } from "@/components/weekly-activity-chart"
 import { Button } from "@/components/ui/button"
 import { soccerSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
@@ -19,7 +20,7 @@ import { cn } from "@/lib/utils"
 
 export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
-  const { userStats, isOnboarded, isLoading } = useApp()
+  const { userStats, isOnboarded, isLoading, sessions } = useApp()
   const { user } = useAuth()
   const { recommendation, isLoading: isRecommendationLoading } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
@@ -147,6 +148,9 @@ export default function HomePage() {
             </p>
           </div>
         </div>
+
+        {/* Weekly Activity Chart */}
+        <WeeklyActivityChart sessions={sessions} />
 
         {/* Motion Sensor */}
         <MotionIndicator

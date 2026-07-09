@@ -27,6 +27,10 @@ export function middleware(request: NextRequest) {
 
   // Session token check on API routes (prevents casual scraping)
   if (request.nextUrl.pathname.startsWith("/api/")) {
+    // Skip auth for health check
+    if (request.nextUrl.pathname === "/api/health") {
+      return response
+    }
     const token = request.headers.get("x-session-token")
     if (!token || token.length < 8) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
