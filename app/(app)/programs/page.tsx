@@ -1,14 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 import { trainingPrograms } from "@/lib/programs-database"
+import { getAllProgramProgress, initProgramProgress } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import type { Program } from "@/lib/types"
 
 export default function ProgramsPage() {
   const [filter, setFilter] = useState<"all" | Program["difficulty"]>("all")
+  const [programProgress, setProgramProgress] = useState<Record<string, { completedSteps: number; totalSteps: number }>>({})
+
+  useEffect(() => {
+    const progress = getAllProgramProgress()
+    const enriched: Record<string, { completedSteps: number; totalSteps: number }> = {}
+    for (const p of trainingPrograms) {
+      const init = initProgramProgress(p.id, p.steps.length)
+      enriched[p.id] = init
+    }
+    setProgramProgress(enriched)
+  }, [])
 
   const filtered = filter === "all" ? trainingPrograms : trainingPrograms.filter((p) => p.difficulty === filter)
 
@@ -53,27 +65,55 @@ export default function ProgramsPage() {
       </header>
 
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-4">
-        {filtered.map((program) => (
-          <Link key={program.id} href={`/programs/${program.id}`}>
-            <div className="rounded-2xl bg-card border border-border p-5 hover:border-primary/40 transition-all hover-lift">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                    {categoryIcons[program.category] || "🏆"}
+        {filtered.map((program) => {
+          const prog = programProgress[program.id]
+          const completed = prog?.completedSteps ?? 0
+          const total = prog?.totalSteps ?? program.steps.length
+          const done = completed >= total && total > 0
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+
+          return (
+            <Link key={program.id} href={`/programs/${program.id}`}>
+              <div className="rounded-2xl bg-card border border-border p-5 hover:border-primary/40 transition-all hover-lift relative overflow-hidden">
+                {done && (
+                  <div className="absolute top-0 right-0 w-20 h-20">
+                    <div className="absolute top-2 right-[-28px] bg-emerald-500 text-white text-[10px] font-bold uppercase px-8 py-0.5 rotate-45 shadow-lg">
+                      Done
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{program.name}</h3>
-                    <p className="text-xs text-muted-foreground">{program.steps.length} drills · {program.estimatedMinutes} min</p>
+                )}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
+                      {categoryIcons[program.category] || "🏆"}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{program.name}</h3>
+                      <p className="text-xs text-muted-foreground">{program.steps.length} drills · {program.estimatedMinutes} min</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {completed > 0 && (
+                      <span className="text-xs font-mono text-primary">{completed}/{total}</span>
+                    )}
+                    <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border", difficultyStyles[program.difficulty])}>
+                      {program.difficulty}
+                    </span>
                   </div>
                 </div>
-                <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border", difficultyStyles[program.difficulty])}>
-                  {program.difficulty}
-                </span>
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{program.description}</p>
+                {completed > 0 && (
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all", done ? "bg-emerald-500" : "bg-primary")}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2">{program.description}</p>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          )
+        })}
       </main>
       <BottomNav />
     </div>

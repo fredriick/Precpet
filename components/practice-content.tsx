@@ -9,6 +9,8 @@ import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useApp } from "@/contexts/app-context"
 import { getSkillById, soccerSkills } from "@/lib/skills-database"
 import { celebratoryFeedback } from "@/lib/feedback"
+import { markProgramStepComplete, getProgramProgress, initProgramProgress } from "@/lib/storage"
+import { trainingPrograms } from "@/lib/programs-database"
 import { cn } from "@/lib/utils"
 import type { Skill, PracticeSession } from "@/lib/types"
 
@@ -16,6 +18,8 @@ export function PracticeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const skillId = searchParams.get("skill")
+  const programId = searchParams.get("program")
+  const programStep = searchParams.get("step")
   const selectedSkill = skillId ? getSkillById(skillId) : null
 
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
@@ -122,9 +126,21 @@ export function PracticeContent() {
       finishSession(currentSession, fluidityHistory)
     }
 
+    // Auto-advance program step if practicing from a program
+    if (programId) {
+      const prog = trainingPrograms.find((p) => p.id === programId)
+      if (prog) {
+        initProgramProgress(programId, prog.steps.length)
+        const stepIdx = programStep ? parseInt(programStep) : 0
+        if (stepIdx < prog.steps.length) {
+          markProgramStepComplete(programId)
+        }
+      }
+    }
+
     // Unified feedback
     celebratoryFeedback()
-  }, [stopTracking, currentSession, fluidityHistory, finishSession])
+  }, [stopTracking, currentSession, fluidityHistory, finishSession, programId, programStep])
 
   const resetPractice = useCallback(() => {
     setPracticeState("idle")
@@ -179,6 +195,9 @@ export function PracticeContent() {
             <div>
               <h1 className="text-2xl font-bold">Practice ⚽</h1>
               {currentSkill && <p className="text-primary text-sm font-medium animate-slide-up">{currentSkill.name}</p>}
+              {programId && (
+                <p className="text-xs text-muted-foreground animate-slide-up">📍 Program Step {programStep ? parseInt(programStep) + 1 : 1}</p>
+              )}
             </div>
             {practiceState === "active" && (
               <div className="text-right animate-slide-up">

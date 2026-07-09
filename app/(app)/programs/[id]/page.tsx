@@ -1,111 +1,168 @@
 "use client"
 
-import { use } from "react"
-import { notFound, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { BottomNav } from "@/components/bottom-nav"
-import { Button } from "@/components/ui/button"
-import { getProgramById } from "@/lib/programs-database"
-import { getSkillById } from "@/lib/skills-database"
+import { trainingPrograms } from "@/lib/programs-database"
+import { getProgramProgress, resetProgramProgress, initProgramProgress } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 
-interface ProgramDetailPageProps {
-  params: Promise<{ id: string }>
-}
-
-const difficultyStyles = {
-  beginner: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  intermediate: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  advanced: "bg-red-500/20 text-red-400 border-red-500/30",
-}
-
-const categoryIcons: Record<string, string> = {
-  dribbling: "⚽",
-  passing: "👟",
-  shooting: "🥅",
-  defending: "🛡️",
-  fitness: "💪",
-  full: "🏆",
-}
-
-export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
-  const { id } = use(params)
+export default function ProgramDetailPage() {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const program = getProgramById(id)
+  const program = trainingPrograms.find((p) => p.id === id)
+  const [progress, setProgress] = useState(() => getProgramProgress(id))
+  const [animatingStep, setAnimatingStep] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (program) {
+      initProgramProgress(program.id, program.steps.length)
+      setProgress(getProgramProgress(id))
+    }
+  }, [id, program])
 
   if (!program) {
-    notFound()
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+        <p className="text-muted-foreground">Program not found</p>
+        <Link href="/programs" className="text-primary underline text-sm">Back to programs</Link>
+      </div>
+    )
   }
 
-  const totalReps = program.steps.reduce((acc, s) => acc + s.reps, 0)
+  const completed = progress?.completedSteps ?? 0
+  const total = program.steps.length
+  const done = completed >= total
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+
+  const handlePracticeStep = (stepIndex: number) => {
+    const step = program.steps[stepIndex]
+    if (!step) return
+    router.push(`/practice?skill=${step.skillId}&program=${program.id}&step=${stepIndex}`)
+  }
+
+  const categoryIcons: Record<string, string> = {
+    dribbling: "⚽",
+    passing: "👟",
+    shooting: "🥅",
+    defending: "🛡️",
+    fitness: "💪",
+    full: "🏆",
+  }
+
+  const difficultyStyles = {
+    beginner: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    intermediate: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    advanced: "bg-red-500/10 text-red-500 border-red-500/20",
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center gap-4 px-4 h-14 max-w-lg mx-auto">
-          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-xl hover:bg-secondary transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <header className="sticky top-0 z-40 glass border-b border-border/50">
+        <div className="px-4 py-3 max-w-lg md:max-w-5xl mx-auto flex items-center gap-3">
+          <Link href="/programs" className="text-muted-foreground hover:text-foreground transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
-          <h1 className="text-lg font-semibold truncate">{program.name}</h1>
+          </Link>
+          <div>
+            <h1 className="text-lg font-bold truncate">{program.name}</h1>
+            <p className="text-xs text-muted-foreground">
+              {total} drills · {program.estimatedMinutes} min
+            </p>
+          </div>
         </div>
       </header>
 
-      <main className="px-4 py-6 max-w-lg mx-auto space-y-6">
-        {/* Hero */}
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-900/20 via-card to-card border border-border p-6">
+      <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-6">
+        <div className="rounded-2xl bg-card border border-border p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
               {categoryIcons[program.category] || "🏆"}
             </div>
-            <div>
-              <h2 className="text-xl font-bold">{program.name}</h2>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
                 <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border", difficultyStyles[program.difficulty])}>
                   {program.difficulty}
                 </span>
-                <span className="text-xs text-muted-foreground">{program.steps.length} drills</span>
-                <span className="text-xs text-muted-foreground">·</span>
-                <span className="text-xs text-muted-foreground">{program.estimatedMinutes} min</span>
+                {done && <span className="text-xs text-emerald-500 font-semibold">✅ Complete</span>}
               </div>
+              <p className="text-sm text-muted-foreground mt-2">{program.description}</p>
             </div>
           </div>
-          <p className="text-muted-foreground text-sm">{program.description}</p>
 
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <div className="bg-secondary/30 rounded-xl p-3 text-center">
-              <p className="text-xl font-bold text-primary">{program.steps.length}</p>
-              <p className="text-[10px] uppercase text-muted-foreground">Drills</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Overall Progress</span>
+              <span className="font-mono font-bold text-primary">{completed}/{total}</span>
             </div>
-            <div className="bg-secondary/30 rounded-xl p-3 text-center">
-              <p className="text-xl font-bold text-foreground">{totalReps}</p>
-              <p className="text-[10px] uppercase text-muted-foreground">Reps</p>
+            <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={cn("h-full rounded-full transition-all duration-500", done ? "bg-emerald-500" : "bg-primary")}
+                style={{ width: `${pct}%` }}
+              />
             </div>
-            <div className="bg-secondary/30 rounded-xl p-3 text-center">
-              <p className="text-xl font-bold text-emerald-400">{program.estimatedMinutes}</p>
-              <p className="text-[10px] uppercase text-muted-foreground">Minutes</p>
-            </div>
+            {progress?.lastPracticed && (
+              <p className="text-xs text-muted-foreground text-right">
+                Last practiced: {new Date(progress.lastPracticed).toLocaleDateString()}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Steps */}
-        <div className="rounded-2xl bg-card border border-border p-5">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Workout Plan</h3>
-          <div className="space-y-4">
+        <div>
+          <h2 className="font-semibold mb-3">Drills</h2>
+          <div className="space-y-3">
             {program.steps.map((step, i) => {
-              const skill = getSkillById(step.skillId)
+              const isCompleted = i < completed
+              const isCurrent = i === completed
+              const isFuture = i > completed
+
               return (
-                <div key={i} className="flex gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-semibold text-sm truncate">{skill?.name || "Drill"}</h4>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{step.reps} reps · {step.duration}m</span>
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-2xl border p-4 transition-all duration-300",
+                    isCompleted && "border-emerald-500/30 bg-emerald-500/5",
+                    isCurrent && "border-primary/50 bg-primary/5 cursor-pointer hover:border-primary",
+                    isFuture && "border-border bg-card opacity-60",
+                    animatingStep === i && "scale-[1.02] border-primary",
+                  )}
+                  onClick={() => (isCurrent ? handlePracticeStep(i) : null)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                        isCompleted && "bg-emerald-500 border-emerald-500",
+                        isCurrent && "border-primary",
+                        isFuture && "border-muted-foreground/30",
+                      )}
+                    >
+                      {isCompleted ? (
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : isCurrent ? (
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      ) : null}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{step.instruction}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className="font-medium text-sm">Step {i + 1}</h3>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {step.reps}x · {step.duration}s
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{step.instruction}</p>
+                    </div>
+                    {isCurrent && !done && (
+                      <div className="shrink-0 self-center">
+                        <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -113,19 +170,38 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="fixed bottom-16 md:bottom-6 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent md:bg-gradient-to-t md:from-background/95 md:via-background/80 md:to-transparent">
-          <div className="max-w-lg mx-auto">
-            <Link href={`/practice?skill=${program.steps[0].skillId}`}>
-              <Button className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25">
-                Start Program 🚀
-              </Button>
-            </Link>
+        {completed === 0 && (
+          <div className="text-center">
+            <button
+              onClick={() => handlePracticeStep(0)}
+              className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              Start Program 🚀
+            </button>
           </div>
-        </div>
-      </main>
+        )}
 
-      <BottomNav />
+        {done && (
+          <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-5 text-center">
+            <p className="text-lg mb-1">🎉</p>
+            <p className="font-semibold text-emerald-500 mb-1">Program Complete!</p>
+            <p className="text-sm text-muted-foreground">
+              {progress?.completedAt
+                ? `Completed on ${new Date(progress.completedAt).toLocaleDateString()}`
+                : "Great work finishing this program!"}
+            </p>
+            <button
+              onClick={() => {
+                resetProgramProgress(program.id)
+                setProgress(getProgramProgress(id))
+              }}
+              className="mt-3 text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              Reset steps to redo
+            </button>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

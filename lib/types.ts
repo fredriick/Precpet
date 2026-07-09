@@ -71,3 +71,11 @@ export interface Program {
   steps: ProgramStep[]
   image?: string
 }
+
+export interface ProgramProgress {
+  completedSteps: number
+  totalSteps: number
+  startedAt: string
+  completedAt?: string
+  lastPracticed?: string
+}

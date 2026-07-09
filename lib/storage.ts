@@ -1,6 +1,6 @@
 // Local storage utilities for persisting user data
 
-import type { UserStats, PracticeSession } from "./types"
+import type { UserStats, PracticeSession, ProgramProgress } from "./types"
 
 const STORAGE_KEYS = {
   userStats: "precept_user_stats",
@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   settings: "precept_settings",
   bookmarks: "precept_bookmarks",
   achievements: "precept_achievements",
+  programs: "precept_programs",
 } as const
 
 // Default user stats for new users
@@ -434,4 +435,92 @@ export function clearAllData(): void {
   } catch (error) {
     console.warn("Failed to clear data:", error)
   }
+}
+
+// Program Progress
+export function getProgramProgress(programId: string): ProgramProgress | null {
+  const all = safeGetItem(STORAGE_KEYS.programs)
+  if (!all) return null
+  try {
+    const parsed = JSON.parse(all)
+    return parsed[programId] || null
+  } catch {
+    return null
+  }
+}
+
+export function getAllProgramProgress(): Record<string, ProgramProgress> {
+  const all = safeGetItem(STORAGE_KEYS.programs)
+  if (!all) return {}
+  try {
+    return JSON.parse(all)
+  } catch {
+    return {}
+  }
+}
+
+export function saveProgramProgress(programId: string, progress: ProgramProgress): void {
+  const all = getAllProgramProgress()
+  all[programId] = progress
+  safeSetItem(STORAGE_KEYS.programs, JSON.stringify(all))
+}
+
+export function markProgramStepComplete(programId: string): ProgramProgress {
+  const all = getAllProgramProgress()
+  const current = all[programId]
+  const now = new Date().toISOString()
+
+  if (!current) {
+    const newProgress: ProgramProgress = {
+      completedSteps: 1,
+      totalSteps: 0,
+      startedAt: now,
+      lastPracticed: now,
+    }
+    all[programId] = newProgress
+    safeSetItem(STORAGE_KEYS.programs, JSON.stringify(all))
+    return newProgress
+  }
+
+  const next = Math.min(current.completedSteps + 1, current.totalSteps || Infinity)
+  const completed = next >= current.totalSteps && current.totalSteps > 0
+  all[programId] = {
+    ...current,
+    completedSteps: next,
+    lastPracticed: now,
+    completedAt: completed ? now : current.completedAt,
+  }
+  safeSetItem(STORAGE_KEYS.programs, JSON.stringify(all))
+  return all[programId]
+}
+
+export function initProgramProgress(programId: string, totalSteps: number): ProgramProgress {
+  const existing = getProgramProgress(programId)
+  if (existing) {
+    if (existing.totalSteps !== totalSteps) {
+      const updated = { ...existing, totalSteps }
+      saveProgramProgress(programId, updated)
+      return updated
+    }
+    return existing
+  }
+
+  const progress: ProgramProgress = {
+    completedSteps: 0,
+    totalSteps,
+    startedAt: new Date().toISOString(),
+  }
+  saveProgramProgress(programId, progress)
+  return progress
+}
+
+export function resetProgramProgress(programId: string): void {
+  const all = getAllProgramProgress()
+  all[programId] = {
+    ...all[programId],
+    completedSteps: 0,
+    completedAt: undefined,
+    lastPracticed: undefined,
+  }
+  safeSetItem(STORAGE_KEYS.programs, JSON.stringify(all))
 }
