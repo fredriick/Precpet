@@ -22,6 +22,7 @@ export const demoPracticeSessions: PracticeSession[] = [
   {
     id: "1",
     skillId: "drag-back",
+    sport: "soccer",
     startTime: new Date(Date.now() - 86400000 * 3).toISOString(),
     endTime: new Date(Date.now() - 86400000 * 3 + 900000).toISOString(),
     fluidityScores: [45, 52, 58, 61, 65, 68, 72],
@@ -30,6 +31,7 @@ export const demoPracticeSessions: PracticeSession[] = [
   {
     id: "2",
     skillId: "body-feint",
+    sport: "soccer",
     startTime: new Date(Date.now() - 86400000).toISOString(),
     endTime: new Date(Date.now() - 86400000 + 600000).toISOString(),
     fluidityScores: [50, 55, 60, 63, 67],

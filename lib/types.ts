@@ -1,7 +1,10 @@
+export type Sport = "soccer" | "basketball" | "tennis"
+
 export interface Skill {
   id: string
   name: string
-  category: "dribbling" | "passing" | "shooting" | "defending" | "movement"
+  sport: Sport
+  category: "dribbling" | "passing" | "shooting" | "defending" | "movement" | "striking"
   difficulty: "beginner" | "intermediate" | "advanced"
   description: string
   reasoning: string
@@ -48,6 +51,7 @@ export interface SkillRecommendation {
 export interface PracticeSession {
   id: string
   skillId: string
+  sport: Sport
   startTime: string
   endTime?: string
   fluidityScores: number[]
@@ -56,6 +60,7 @@ export interface PracticeSession {
 
 export interface ProgramStep {
   skillId: string
+  sport: Sport
   duration: number
   reps: number
   instruction: string
@@ -64,8 +69,9 @@ export interface ProgramStep {
 export interface Program {
   id: string
   name: string
+  sport: Sport
   description: string
-  category: "dribbling" | "passing" | "shooting" | "defending" | "fitness" | "full"
+  category: "dribbling" | "passing" | "shooting" | "defending" | "fitness" | "full" | "striking"
   difficulty: "beginner" | "intermediate" | "advanced"
   estimatedMinutes: number
   steps: ProgramStep[]

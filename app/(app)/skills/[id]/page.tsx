@@ -139,6 +139,9 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
             <span className="px-3 py-1.5 rounded-full bg-secondary text-muted-foreground text-xs font-medium capitalize">
               {skill.category}
             </span>
+            <span className="px-3 py-1.5 rounded-full bg-secondary/50 text-muted-foreground text-xs font-medium capitalize">
+              {skill.sport === "soccer" ? "⚽" : skill.sport === "basketball" ? "🏀" : "🎾"} {skill.sport}
+            </span>
           </div>
 
           <div>

@@ -4,6 +4,7 @@ import {
   getAchievementById,
   checkAchievementUnlock,
 } from "@/lib/achievements-database"
+import { allSkills } from "@/lib/skills-database"
 
 const emptyStats = {
   practiceMinutes: 0,
@@ -66,7 +67,8 @@ describe("achievements-database", () => {
     })
 
     it("skill-master requires all skills learned", () => {
-      const stats = { ...emptyStats, skillsLearned: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15"] }
+      const ids = Array.from({ length: allSkills.length }, (_, i) => `s${i}`)
+      const stats = { ...emptyStats, skillsLearned: ids }
       expect(checkAchievementUnlock("skill-master", stats, emptySessions)).toBe(true)
     })
 

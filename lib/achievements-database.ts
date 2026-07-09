@@ -1,5 +1,5 @@
 import type { Achievement } from "./types"
-import { soccerSkills } from "./skills-database"
+import { allSkills } from "./skills-database"
 
 export const achievements: Achievement[] = [
     {
@@ -111,7 +111,7 @@ export function checkAchievementUnlock(
         }
 
         case "skill-master":
-            return userStats.skillsLearned.length >= soccerSkills.length
+            return userStats.skillsLearned.length >= allSkills.length
 
         case "knowledge-seeker":
             return userStats.bookmarkedSkills.length >= 3

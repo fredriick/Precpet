@@ -2,7 +2,7 @@ import { generateText } from "ai"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import type { SkillRecommendation } from "@/lib/types"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills } from "@/lib/skills-database"
 
 const userStatsSchema = z.object({
   matchesPlayed: z.number().min(0).max(9999),
@@ -66,10 +66,10 @@ export async function POST(request: Request) {
 - Motion Fluidity Score: ${motionFluidityScore}
 - Is in Practice Window: ${isInPracticeWindow}
 
-## Available Skills to Recommend:
-${soccerSkills
+## Available Skills to Recommend (grouped by sport):
+${allSkills
   .filter((s) => !userStats.skillsLearned.includes(s.id))
-  .map((s) => `- ${s.name} (${s.id}): ${s.description}`)
+  .map((s) => `- [${s.sport}] ${s.name} (${s.id}): ${s.description}`)
   .join("\n")}
 
 ## Task 1: The Decision Logic (Restraint)
@@ -121,7 +121,7 @@ Respond ONLY with valid JSON.`
 
     // If recommending, include the full skill data
     if (aiResponse.action === "RECOMMEND" && aiResponse.skillId) {
-      const skill = soccerSkills.find((s) => s.id === aiResponse.skillId)
+      const skill = allSkills.find((s) => s.id === aiResponse.skillId)
       if (skill) {
         recommendation.skill = skill
       }
@@ -144,7 +144,7 @@ function fallbackRecommendation(
 ): Response {
   // Find the weakest area and recommend the matching unlearned skill
   if (userStats.ballLossesUnderPressure > 5 && userStats.passAccuracy < 70) {
-    const skill = soccerSkills.find((s) => s.id === "body-feint" && !userStats.skillsLearned.includes(s.id))
+    const skill = allSkills.find((s) => s.id === "body-feint" && !userStats.skillsLearned.includes(s.id))
     if (skill) {
       return NextResponse.json({
         action: "RECOMMEND",
@@ -156,7 +156,7 @@ function fallbackRecommendation(
   }
 
   if (userStats.passAccuracy > 0 && userStats.passAccuracy < 65) {
-    const skill = soccerSkills.find((s) => s.id === "inside-turn" && !userStats.skillsLearned.includes(s.id))
+    const skill = allSkills.find((s) => s.id === "inside-turn" && !userStats.skillsLearned.includes(s.id))
     if (skill) {
       return NextResponse.json({
         action: "RECOMMEND",
@@ -168,7 +168,7 @@ function fallbackRecommendation(
   }
 
   if (motionFluidityScore > 0 && motionFluidityScore < 50) {
-    const skill = soccerSkills.find((s) => s.id === "cruyff-turn" && !userStats.skillsLearned.includes(s.id))
+    const skill = allSkills.find((s) => s.id === "cruyff-turn" && !userStats.skillsLearned.includes(s.id))
     if (skill) {
       return NextResponse.json({
         action: "RECOMMEND",
@@ -188,7 +188,7 @@ function fallbackRecommendation(
   }
 
   // Default: recommend the first unlearned skill if any
-  const unlearned = soccerSkills.find((s) => !userStats.skillsLearned.includes(s.id))
+  const unlearned = allSkills.find((s) => !userStats.skillsLearned.includes(s.id))
   if (unlearned) {
     return NextResponse.json({
       action: "RECOMMEND",

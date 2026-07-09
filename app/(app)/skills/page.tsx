@@ -4,22 +4,24 @@ import { useState } from "react"
 import { BottomNav } from "@/components/bottom-nav"
 import { SkillCard } from "@/components/skill-card"
 import { SkillSearch } from "@/components/skill-search"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { useApp } from "@/contexts/app-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { Skill } from "@/lib/types"
+import type { Skill, Sport } from "@/lib/types"
 
 type FilterCategory = "all" | Skill["category"] | "bookmarked"
 type FilterDifficulty = "all" | Skill["difficulty"]
 
 export default function SkillsPage() {
   const { userStats } = useApp()
+  const [sportFilter, setSportFilter] = useState<Sport | "all">("all")
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>("all")
   const [difficultyFilter, setDifficultyFilter] = useState<FilterDifficulty>("all")
   const [searchQuery, setSearchQuery] = useState("")
 
-  const filteredSkills = soccerSkills.filter((skill) => {
+  const sportSkills = sportFilter === "all" ? allSkills : getSkillsBySport(sportFilter)
+  const filteredSkills = sportSkills.filter((skill) => {
     // Search query
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
@@ -51,6 +53,7 @@ export default function SkillsPage() {
     { id: "shooting", label: "Shooting", icon: "🥅" },
     { id: "defending", label: "Defending", icon: "🛡️" },
     { id: "movement", label: "Movement", icon: "🏃" },
+    { id: "striking", label: "Striking", icon: "🎾" },
   ]
 
   const difficulties: FilterDifficulty[] = ["all", "beginner", "intermediate", "advanced"]
@@ -74,6 +77,24 @@ export default function SkillsPage() {
       </header>
 
       <main className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto space-y-5">
+        {/* Sport Filter */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          {(["all", "soccer", "basketball", "tennis"] as const).map((sport) => (
+            <button
+              key={sport}
+              onClick={() => setSportFilter(sport)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap border",
+                sportFilter === sport
+                  ? "bg-accent/50 border-accent text-accent-foreground"
+                  : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+              )}
+            >
+              {sport === "all" ? "All" : sport === "soccer" ? "⚽ Soccer" : sport === "basketball" ? "🏀 Basketball" : "🎾 Tennis"}
+            </button>
+          ))}
+        </div>
+
         {/* Category Filter */}
         <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
           <div className="flex gap-2 min-w-max pb-2">
@@ -145,6 +166,7 @@ export default function SkillsPage() {
               variant="outline"
               className="mt-6"
               onClick={() => {
+                setSportFilter("all")
                 setCategoryFilter("all")
                 setDifficultyFilter("all")
                 setSearchQuery("")

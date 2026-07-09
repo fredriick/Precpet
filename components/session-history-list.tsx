@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import type { PracticeSession } from "@/lib/types"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
 
 interface SessionHistoryListProps {
@@ -30,7 +30,7 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
     return (
         <div className="space-y-4">
             {sortedSessions.map((session, index) => {
-                const skill = soccerSkills.find((s) => s.id === session.skillId)
+                const skill = allSkills.find((s) => s.id === session.skillId)
                 const date = new Date(session.startTime)
                 const duration = session.endTime
                     ? Math.round((new Date(session.endTime).getTime() - date.getTime()) / 60000)
@@ -51,11 +51,9 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                         <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                                    {skill?.category === "dribbling" && "⚽"}
-                                    {skill?.category === "passing" && "👟"}
-                                    {skill?.category === "shooting" && "🥅"}
-                                    {skill?.category === "defending" && "🛡️"}
-                                    {skill?.category === "movement" && "🏃"}
+                                    {skill?.sport === "soccer" && "⚽"}
+                                    {skill?.sport === "basketball" && "🏀"}
+                                    {skill?.sport === "tennis" && "🎾"}
                                     {!skill && "📝"}
                                 </div>
                                 <div>

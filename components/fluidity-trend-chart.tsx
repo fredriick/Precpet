@@ -3,7 +3,7 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import type { PracticeSession } from "@/lib/types"
 import { format } from "date-fns"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills } from "@/lib/skills-database"
 
 interface FluidityTrendChartProps {
   sessions: PracticeSession[]
@@ -17,7 +17,7 @@ export function FluidityTrendChart({ sessions }: FluidityTrendChartProps) {
 
   const data = completed.map((s) => {
     const avg = Math.round(s.fluidityScores.reduce((a, b) => a + b, 0) / s.fluidityScores.length)
-    const skill = soccerSkills.find((sk) => sk.id === s.skillId)
+    const skill = allSkills.find((sk) => sk.id === s.skillId)
     return {
       label: format(new Date(s.startTime), "MM/dd"),
       score: avg,

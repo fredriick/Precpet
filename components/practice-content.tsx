@@ -7,12 +7,12 @@ import { MotionIndicator } from "@/components/motion-indicator"
 import { Button } from "@/components/ui/button"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useApp } from "@/contexts/app-context"
-import { getSkillById, soccerSkills } from "@/lib/skills-database"
+import { getSkillById, allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { celebratoryFeedback } from "@/lib/feedback"
 import { markProgramStepComplete, getProgramProgress, initProgramProgress } from "@/lib/storage"
 import { trainingPrograms } from "@/lib/programs-database"
 import { cn } from "@/lib/utils"
-import type { Skill, PracticeSession } from "@/lib/types"
+import type { Skill, PracticeSession, Sport } from "@/lib/types"
 
 export function PracticeContent() {
   const searchParams = useSearchParams()
@@ -29,6 +29,7 @@ export function PracticeContent() {
   const [sessionTime, setSessionTime] = useState(0)
   const [fluidityHistory, setFluidityHistory] = useState<number[]>([])
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(selectedSkill ?? null)
+  const [selectedSport, setSelectedSport] = useState<Sport>("soccer")
   const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -43,10 +44,11 @@ export function PracticeContent() {
   }
 
   // Filter skills based on user preference
+  const sportFiltered = getSkillsBySport(selectedSport)
   const filteredSkills =
     settings.preferredDifficulty === "all"
-      ? soccerSkills
-      : soccerSkills.filter((s) => s.difficulty === settings.preferredDifficulty)
+      ? sportFiltered
+      : sportFiltered.filter((s) => s.difficulty === settings.preferredDifficulty)
 
   // Timer for practice session
   useEffect(() => {
@@ -84,6 +86,7 @@ export function PracticeContent() {
       const session: PracticeSession = {
         id: crypto.randomUUID(),
         skillId: currentSkill.id,
+        sport: currentSkill.sport,
         startTime: new Date().toISOString(),
         fluidityScores: [],
         completed: false,
@@ -226,6 +229,23 @@ export function PracticeContent() {
                     </button>
                     <h2 className="text-xl font-bold">What are we training? 🤔</h2>
                   </div>
+                </div>
+                {/* Sport Filter */}
+                <div className="flex gap-2 mb-4 overflow-x-auto">
+                  {(["soccer", "basketball", "tennis"] as const).map((sport) => (
+                    <button
+                      key={sport}
+                      onClick={() => setSelectedSport(sport)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
+                        selectedSport === sport
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      )}
+                    >
+                      {sport === "soccer" ? "⚽ Soccer" : sport === "basketball" ? "🏀 Basketball" : "🎾 Tennis"}
+                    </button>
+                  ))}
                 </div>
                 <div className="space-y-3">
                   {filteredSkills.map((skill, i) => (

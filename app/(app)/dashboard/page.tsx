@@ -13,7 +13,7 @@ import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { WeeklyActivityChart } from "@/components/weekly-activity-chart"
 import { Button } from "@/components/ui/button"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -24,7 +24,7 @@ export default function HomePage() {
   const { user } = useAuth()
   const { recommendation, isLoading: isRecommendationLoading } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
-  const [recommendedSkill, setRecommendedSkill] = useState(soccerSkills[0])
+  const [recommendedSkill, setRecommendedSkill] = useState(allSkills[0])
 
   // Show recommendation when it arrives
   useEffect(() => {
@@ -193,12 +193,12 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Skills Learned</h3>
             <span className="text-xs text-muted-foreground">
-              {userStats.skillsLearned.length} / {soccerSkills.length}
+              {userStats.skillsLearned.length} / {allSkills.length}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {userStats.skillsLearned.map((skillId) => {
-              const skill = soccerSkills.find((s) => s.id === skillId)
+              const skill = allSkills.find((s) => s.id === skillId)
               return skill ? (
                 <div key={skillId} className="px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
                   {skill.name}

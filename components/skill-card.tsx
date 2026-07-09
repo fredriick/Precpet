@@ -49,6 +49,12 @@ const categoryIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
     </svg>
   ),
+  striking: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
 }
 
 export function SkillCard({ skill, isLearned = false }: SkillCardProps) {
@@ -124,6 +130,9 @@ export function SkillCard({ skill, isLearned = false }: SkillCardProps) {
           </span>
           <span className="px-2.5 py-1 rounded-full bg-secondary text-muted-foreground text-xs font-medium capitalize">
             {skill.category}
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground text-xs font-medium">
+            {skill.sport === "soccer" ? "⚽" : skill.sport === "basketball" ? "🏀" : "🎾"} {skill.sport}
           </span>
         </div>
       </div>

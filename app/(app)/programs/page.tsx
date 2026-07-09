@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
-import { trainingPrograms } from "@/lib/programs-database"
+import { trainingPrograms, getProgramsBySport } from "@/lib/programs-database"
 import { getAllProgramProgress, initProgramProgress } from "@/lib/storage"
 import { cn } from "@/lib/utils"
-import type { Program } from "@/lib/types"
+import type { Program, Sport } from "@/lib/types"
 
 export default function ProgramsPage() {
-  const [filter, setFilter] = useState<"all" | Program["difficulty"]>("all")
+  const [sportFilter, setSportFilter] = useState<"all" | Sport>("all")
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | Program["difficulty"]>("all")
   const [programProgress, setProgramProgress] = useState<Record<string, { completedSteps: number; totalSteps: number }>>({})
 
   useEffect(() => {
@@ -22,7 +23,8 @@ export default function ProgramsPage() {
     setProgramProgress(enriched)
   }, [])
 
-  const filtered = filter === "all" ? trainingPrograms : trainingPrograms.filter((p) => p.difficulty === filter)
+  const bySport = sportFilter === "all" ? trainingPrograms : getProgramsBySport(sportFilter)
+  const filtered = difficultyFilter === "all" ? bySport : bySport.filter((p) => p.difficulty === difficultyFilter)
 
   const difficultyStyles = {
     beginner: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
@@ -39,6 +41,12 @@ export default function ProgramsPage() {
     full: "🏆",
   }
 
+  const sportIcons: Record<string, string> = {
+    soccer: "⚽",
+    basketball: "🏀",
+    tennis: "🎾",
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-40 glass border-b border-border/50">
@@ -46,14 +54,30 @@ export default function ProgramsPage() {
           <h1 className="text-2xl font-bold mb-1">Training Programs 🏋️</h1>
           <p className="text-muted-foreground text-xs">Structured workouts to level up fast</p>
         </div>
+        <div className="px-4 pb-2 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
+          {(["all", "soccer", "basketball", "tennis"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSportFilter(s)}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-medium transition-colors border whitespace-nowrap",
+                sportFilter === s
+                  ? "bg-primary/20 border-primary text-primary"
+                  : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50",
+              )}
+            >
+              {s === "all" ? "All Sports" : `${sportIcons[s] || ""} ${s.charAt(0).toUpperCase() + s.slice(1)}`}
+            </button>
+          ))}
+        </div>
         <div className="px-4 pb-3 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
           {(["all", "beginner", "intermediate", "advanced"] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => setDifficultyFilter(f)}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-medium transition-colors border whitespace-nowrap",
-                filter === f
+                difficultyFilter === f
                   ? "bg-primary/20 border-primary text-primary"
                   : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50",
               )}
@@ -85,7 +109,7 @@ export default function ProgramsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                      {categoryIcons[program.category] || "🏆"}
+                      {sportIcons[program.sport] || categoryIcons[program.category] || "🏆"}
                     </div>
                     <div>
                       <h3 className="font-semibold">{program.name}</h3>
@@ -93,6 +117,7 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span className="text-xs">{sportIcons[program.sport]}</span>
                     {completed > 0 && (
                       <span className="text-xs font-mono text-primary">{completed}/{total}</span>
                     )}

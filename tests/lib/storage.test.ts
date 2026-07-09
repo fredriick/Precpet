@@ -59,11 +59,11 @@ describe("storage", () => {
 
     it("prepends new sessions", () => {
       const s1: PracticeSession = {
-        id: "1", skillId: "a", startTime: new Date().toISOString(),
+        id: "1", skillId: "a", sport: "soccer", startTime: new Date().toISOString(),
         fluidityScores: [], completed: false,
       }
       const s2: PracticeSession = {
-        id: "2", skillId: "b", startTime: new Date().toISOString(),
+        id: "2", skillId: "b", sport: "soccer", startTime: new Date().toISOString(),
         fluidityScores: [], completed: false,
       }
       savePracticeSession(s1)
@@ -76,7 +76,7 @@ describe("storage", () => {
 
     it("updates existing session by id", () => {
       const s1: PracticeSession = {
-        id: "1", skillId: "a", startTime: new Date().toISOString(),
+        id: "1", skillId: "a", sport: "soccer", startTime: new Date().toISOString(),
         fluidityScores: [], completed: false,
       }
       savePracticeSession(s1)
@@ -89,7 +89,7 @@ describe("storage", () => {
     it("limits to 50 sessions", () => {
       for (let i = 0; i < 60; i++) {
         savePracticeSession({
-          id: `${i}`, skillId: "a", startTime: new Date().toISOString(),
+          id: `${i}`, skillId: "a", sport: "soccer", startTime: new Date().toISOString(),
           fluidityScores: [], completed: false,
         })
       }
@@ -187,7 +187,7 @@ describe("storage", () => {
 
     it("completes a session and updates stats", () => {
       const session: PracticeSession = {
-        id: "s1", skillId: "cruyff-turn",
+        id: "s1", skillId: "cruyff-turn", sport: "soccer",
         startTime: new Date(Date.now() - 600000).toISOString(),
         fluidityScores: [], completed: false,
       }
@@ -200,7 +200,7 @@ describe("storage", () => {
     it("marks skill as learned after 3 sessions with avg > 70", () => {
       for (let i = 0; i < 3; i++) {
         const session: PracticeSession = {
-          id: `s${i}`, skillId: "step-over",
+          id: `s${i}`, skillId: "step-over", sport: "soccer",
           startTime: new Date(Date.now() - 600000).toISOString(),
           fluidityScores: [], completed: false,
         }

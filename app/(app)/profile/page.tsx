@@ -5,7 +5,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
-import { soccerSkills } from "@/lib/skills-database"
+import { allSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
 import { LogoutButton } from "@/components/logout-button"
 
@@ -25,7 +25,7 @@ export default function ProfilePage() {
     setIsEditing(false)
   }
 
-  const totalSkills = soccerSkills.length
+  const totalSkills = allSkills.length
   const learnedSkills = userStats.skillsLearned.length
 
   return (
