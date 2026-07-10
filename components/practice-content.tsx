@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
 import { MotionIndicator } from "@/components/motion-indicator"
@@ -34,10 +34,80 @@ export function PracticeContent() {
   useEffect(() => {
     setSelectedSport(settings.preferredSport)
   }, [settings.preferredSport])
-    const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
+  const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [goalMinutes, setGoalMinutes] = useState<number | null>(null)
+
+  // Program drill state
+  const program = programId ? trainingPrograms.find((p) => p.id === programId) : null
+  const stepIndex = programStep ? parseInt(programStep) : 0
+  const currentStep = program?.steps[stepIndex]
+  const totalProgramSteps = program?.steps.length ?? 0
+  const [drillPhase, setDrillPhase] = useState<"idle" | "drilling" | "step-complete">("idle")
+  const [drillTimer, setDrillTimer] = useState(currentStep?.duration ?? 30)
+  const [drillReps, setDrillReps] = useState(0)
+  const [drillStepIndex, setDrillStepIndex] = useState(stepIndex)
+
+  // Drill timer countdown
+  useEffect(() => {
+    if (drillPhase !== "drilling") return
+    const interval = setInterval(() => {
+      setDrillTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setDrillPhase("step-complete")
+          if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(200)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [drillPhase, settings.hapticFeedback])
+
+  const startDrill = useCallback(() => {
+    setDrillPhase("drilling")
+    setDrillTimer(currentStep?.duration ?? 30)
+    setDrillReps(0)
+  }, [currentStep])
+
+  const tapRep = useCallback(() => {
+    setDrillReps((prev) => {
+      const next = prev + 1
+      if (next >= (currentStep?.reps ?? Infinity) && drillPhase === "drilling") {
+        setDrillPhase("step-complete")
+        setDrillTimer(0)
+        if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(200)
+      }
+      return Math.min(next, currentStep?.reps ?? Infinity)
+    })
+    if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(30)
+  }, [currentStep, drillPhase, settings.hapticFeedback])
+
+  const advanceStep = useCallback(() => {
+    const nextIdx = drillStepIndex + 1
+    if (nextIdx >= totalProgramSteps) {
+      stopTracking()
+      setPracticeState("complete")
+      setShowConfetti(true)
+      if (currentSession) finishSession(currentSession, fluidityHistory)
+      if (programId) {
+        const prog = trainingPrograms.find((p) => p.id === programId)
+        if (prog) {
+          initProgramProgress(programId, prog.steps.length)
+          markProgramStepComplete(programId)
+        }
+      }
+      celebratoryFeedback()
+      return
+    }
+    setDrillStepIndex(nextIdx)
+    setDrillPhase("idle")
+    setDrillTimer(program?.steps[nextIdx].duration ?? 30)
+    setDrillReps(0)
+    router.replace(`/practice?skill=${program?.steps[nextIdx].skillId}&program=${programId}&step=${nextIdx}`, { scroll: false })
+  }, [drillStepIndex, totalProgramSteps, stopTracking, currentSession, fluidityHistory, finishSession, programId, program, router])
 
   // Feedback messages based on performance
   const getEncouragement = (fluidity: number) => {
@@ -203,7 +273,10 @@ export function PracticeContent() {
               <h1 className="text-2xl font-bold">Practice ⚽</h1>
               {currentSkill && <p className="text-primary text-sm font-medium animate-slide-up">{currentSkill.name}</p>}
               {programId && (
-                <p className="text-xs text-muted-foreground animate-slide-up">📍 Program Step {programStep ? parseInt(programStep) + 1 : 1}</p>
+                <div className="text-xs text-muted-foreground animate-slide-up">
+                  📍 Step {drillStepIndex + 1}/{totalProgramSteps}
+                  {currentStep && ` · ${drillReps}/${currentStep.reps} reps`}
+                </div>
               )}
             </div>
             {practiceState === "active" && (
@@ -350,9 +423,94 @@ export function PracticeContent() {
           <div className="space-y-6">
 
             {/* Encouragement Banner */}
-            {practiceState === "active" && (
+            {practiceState === "active" && !programId && (
               <div className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-center text-sm font-medium animate-pulse">
                 {getEncouragement(analysis.fluidityScore)}
+              </div>
+            )}
+
+            {/* Program Drill Timer & Rep Counter */}
+            {programId && currentStep && practiceState === "active" && (
+              <div className="rounded-3xl bg-card border border-primary/20 p-6 text-center shadow-sm">
+                {/* Step progress dots */}
+                <div className="flex justify-center gap-1.5 mb-4">
+                  {Array.from({ length: totalProgramSteps }).map((_, i) => (
+                    <div key={i} className={cn(
+                      "w-2 h-2 rounded-full transition-colors",
+                      i < drillStepIndex && "bg-emerald-500",
+                      i === drillStepIndex && "bg-primary",
+                      i > drillStepIndex && "bg-secondary",
+                    )} />
+                  ))}
+                </div>
+
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Step {drillStepIndex + 1}</p>
+                <p className="text-sm text-muted-foreground mb-4">{currentStep.instruction}</p>
+
+                {/* Timer */}
+                <div className="relative w-36 h-36 mx-auto mb-4">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--secondary)" strokeWidth="6" />
+                    <circle
+                      cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" strokeWidth="6"
+                      strokeDasharray={`${2 * Math.PI * 42}`}
+                      strokeDashoffset={`${2 * Math.PI * 42 * (1 - (drillPhase === "drilling" ? drillTimer / (currentStep.duration || 1) : 1))}`}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {drillPhase === "idle" ? (
+                      <button
+                        onClick={startDrill}
+                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground text-lg font-bold flex items-center justify-center shadow-lg shadow-primary/30 hover:scale-105 transition-transform"
+                      >
+                        Go
+                      </button>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-4xl font-mono font-bold text-primary">{drillTimer}s</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rep Counter */}
+                {drillPhase !== "idle" && (
+                  <div className="flex items-center justify-center gap-6">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Reps</p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={tapRep}
+                          disabled={drillPhase === "step-complete"}
+                          className={cn(
+                            "w-16 h-16 rounded-2xl font-bold text-2xl transition-all",
+                            drillPhase === "drilling"
+                              ? "bg-primary/20 text-primary border-2 border-primary hover:bg-primary/30 active:scale-95"
+                              : "bg-emerald-500/20 text-emerald-500 border-2 border-emerald-500",
+                          )}
+                        >
+                          {drillReps}
+                        </button>
+                        <span className="text-sm text-muted-foreground">/ {currentStep.reps}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step Complete */}
+                {drillPhase === "step-complete" && (
+                  <div className="mt-4 animate-slide-up">
+                    <p className="text-emerald-500 font-semibold mb-2">✅ Step complete!</p>
+                    <button
+                      onClick={advanceStep}
+                      className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      {drillStepIndex + 1 >= totalProgramSteps ? "Complete Program 🎉" : "Next Step →"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
