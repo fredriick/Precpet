@@ -66,6 +66,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     soundEffects: true,
     practiceReminders: true,
     preferredDifficulty: "all",
+    preferredSport: "soccer",
+    theme: "dark",
   })
   const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -78,7 +80,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const stats = getUserStats()
     setUserStats(stats)
     setSessions(getPracticeSessions())
-    setSettings(getUserSettings())
+    const saved = getUserSettings()
+    setSettings(saved)
+    document.documentElement.className = saved.theme
     setIsOnboarded(hasCompletedOnboarding())
     setIsLoading(false)
     achievementsRef.current = [...stats.achievements]

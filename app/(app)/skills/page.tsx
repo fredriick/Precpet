@@ -14,8 +14,8 @@ type FilterCategory = "all" | Skill["category"] | "bookmarked"
 type FilterDifficulty = "all" | Skill["difficulty"]
 
 export default function SkillsPage() {
-  const { userStats } = useApp()
-  const [sportFilter, setSportFilter] = useState<Sport | "all">("all")
+  const { userStats, settings } = useApp()
+  const [sportFilter, setSportFilter] = useState<Sport | "all">(settings.preferredSport)
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>("all")
   const [difficultyFilter, setDifficultyFilter] = useState<FilterDifficulty>("all")
   const [searchQuery, setSearchQuery] = useState("")

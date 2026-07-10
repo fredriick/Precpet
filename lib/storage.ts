@@ -1,6 +1,6 @@
 // Local storage utilities for persisting user data
 
-import type { UserStats, PracticeSession, ProgramProgress } from "./types"
+import type { UserStats, PracticeSession, ProgramProgress, Sport } from "./types"
 
 const STORAGE_KEYS = {
   userStats: "precept_user_stats",
@@ -35,6 +35,8 @@ export interface UserSettings {
   soundEffects: boolean
   practiceReminders: boolean
   preferredDifficulty: "beginner" | "intermediate" | "advanced" | "all"
+  preferredSport: Sport
+  theme: "dark" | "light"
 }
 
 const defaultSettings: UserSettings = {
@@ -42,6 +44,8 @@ const defaultSettings: UserSettings = {
   soundEffects: true,
   practiceReminders: true,
   preferredDifficulty: "all",
+  preferredSport: "soccer",
+  theme: "dark",
 }
 
 const DATA_VERSION_KEY = "precept_data_version"
@@ -209,6 +213,9 @@ export function getUserSettings(): UserSettings {
 
 export function saveUserSettings(settings: UserSettings): void {
   safeSetItem(STORAGE_KEYS.settings, JSON.stringify(settings))
+  if (typeof document !== "undefined") {
+    document.documentElement.className = settings.theme
+  }
 }
 
 // Mark a skill as learned

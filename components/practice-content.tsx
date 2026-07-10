@@ -29,8 +29,12 @@ export function PracticeContent() {
   const [sessionTime, setSessionTime] = useState(0)
   const [fluidityHistory, setFluidityHistory] = useState<number[]>([])
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(selectedSkill ?? null)
-  const [selectedSport, setSelectedSport] = useState<Sport>("soccer")
-  const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
+  const [selectedSport, setSelectedSport] = useState<Sport>(settings.preferredSport)
+
+  useEffect(() => {
+    setSelectedSport(settings.preferredSport)
+  }, [settings.preferredSport])
+    const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [goalMinutes, setGoalMinutes] = useState<number | null>(null)

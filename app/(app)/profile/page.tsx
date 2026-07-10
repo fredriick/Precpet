@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/contexts/app-context"
@@ -184,7 +185,10 @@ export default function ProfilePage() {
 
         {/* Settings */}
         <div className="rounded-2xl bg-card border border-border p-6">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Settings</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Settings</h3>
+            <Link href="/settings" className="text-xs text-primary underline">Full settings →</Link>
+          </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
