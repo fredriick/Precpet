@@ -55,17 +55,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    setUser(getStoredUser())
+    const stored = getStoredUser()
+    if (stored) {
+      setUser(stored)
+    } else {
+      const guest: AuthUser = {
+        email: `guest_${Date.now()}@local.precept`,
+        name: "Guest",
+        createdAt: new Date().toISOString(),
+      }
+      setStoredUser(guest)
+      setUser(guest)
+    }
     setIsLoading(false)
   }, [])
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const stored = localStorage.getItem(`precept_cred_${email}`)
+    const normalizedEmail = email.trim().toLowerCase()
+    const stored = localStorage.getItem(`precept_cred_${normalizedEmail}`)
     if (!stored) return false
     try {
       const cred = JSON.parse(stored)
       if (cred.password === hashPassword(password)) {
-        const authUser: AuthUser = { email, name: cred.name, createdAt: cred.createdAt }
+        const authUser: AuthUser = { email: normalizedEmail, name: cred.name, createdAt: cred.createdAt }
         setStoredUser(authUser)
         setUser(authUser)
         return true
@@ -77,12 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<boolean> => {
-    if (localStorage.getItem(`precept_cred_${email}`)) return false
+    const normalizedEmail = email.trim().toLowerCase()
+    if (localStorage.getItem(`precept_cred_${normalizedEmail}`)) return false
 
     const createdAt = new Date().toISOString()
-    localStorage.setItem(`precept_cred_${email}`, JSON.stringify({ name, email, password: hashPassword(password), createdAt }))
+    localStorage.setItem(`precept_cred_${normalizedEmail}`, JSON.stringify({ name, email: normalizedEmail, password: hashPassword(password), createdAt }))
 
-    const authUser: AuthUser = { email, name, createdAt }
+    const authUser: AuthUser = { email: normalizedEmail, name: name.trim(), createdAt }
     setStoredUser(authUser)
     setUser(authUser)
     return true
@@ -112,6 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function isGuestUser(user: AuthUser | null): boolean {
+  return !!user && user.email.endsWith("@local.precept")
 }
 
 export function useAuth() {

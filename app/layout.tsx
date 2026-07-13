@@ -49,7 +49,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var s=JSON.parse(localStorage.getItem("precept_settings"));if(s&&s.theme)document.documentElement.className=s.theme}catch(e){}})()`,
+        }} />
+      </head>
       <body className={`${autourOne.variable} font-sans antialiased bg-background text-foreground selection:bg-primary/30`}>
         <AuthProvider>
           <AppProvider>

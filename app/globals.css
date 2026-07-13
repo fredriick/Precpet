@@ -38,9 +38,11 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.22 0.01 260);
   --sidebar-ring: oklch(0.7 0.17 162);
+  --glass-bg: oklch(0.12 0.01 260 / 0.8);
+  --bg-gradient-1: oklch(0.7 0.17 162 / 0.08);
+  --bg-gradient-2: oklch(0.25 0.02 260 / 0.1);
 }
 
-/* Keep dark as the only theme */
 .dark {
   --background: oklch(0.07 0.01 260);
   --foreground: oklch(0.95 0 0);
@@ -74,6 +76,9 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.22 0.01 260);
   --sidebar-ring: oklch(0.7 0.17 162);
+  --glass-bg: oklch(0.12 0.01 260 / 0.8);
+  --bg-gradient-1: oklch(0.7 0.17 162 / 0.08);
+  --bg-gradient-2: oklch(0.25 0.02 260 / 0.1);
 }
 
 .light {
@@ -109,6 +114,9 @@
   --sidebar-accent-foreground: oklch(0.12 0 0);
   --sidebar-border: oklch(0.82 0.01 260);
   --sidebar-ring: oklch(0.5 0.18 162);
+  --glass-bg: oklch(0.95 0 0 / 0.8);
+  --bg-gradient-1: oklch(0.5 0.18 162 / 0.1);
+  --bg-gradient-2: oklch(0.7 0.02 260 / 0.12);
 }
 
 @theme inline {
@@ -174,14 +182,25 @@
     width: 100%;
     height: 100%;
     background:
-      radial-gradient(circle at 15% 50%, oklch(0.7 0.17 162 / 0.08), transparent 25%),
-      radial-gradient(circle at 85% 30%, oklch(0.25 0.02 260 / 0.1), transparent 25%);
+      radial-gradient(circle at 15% 50%, var(--bg-gradient-1), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--bg-gradient-2), transparent 25%);
     pointer-events: none;
     z-index: -1;
   }
 }
 
 /* Custom Precept styles */
+
+/* Force-generate missing utilities not detected by Tailwind v4 scanner in template literals/ternary expressions */
+.text-foreground { color: var(--foreground); }
+.bg-background { background-color: var(--background); }
+.bg-white\/30 { background-color: rgba(255, 255, 255, 0.3); }
+.border-white\/50 { border-color: rgba(255, 255, 255, 0.5); }
+.bg-black\/10 { background-color: rgba(0, 0, 0, 0.1); }
+.border-white\/20 { border-color: rgba(255, 255, 255, 0.2); }
+.ring-white\/50 { --tw-ring-color: rgba(255, 255, 255, 0.5); }
+.bg-white\/10 { background-color: rgba(255, 255, 255, 0.1); }
+
 @layer utilities {
   .fluidity-gradient {
     background: linear-gradient(90deg, oklch(0.55 0.2 25) 0%, oklch(0.75 0.15 80) 50%, oklch(0.7 0.17 162) 100%);
@@ -234,7 +253,7 @@
 
   /* Glass morphism */
   .glass {
-    background: oklch(0.12 0.01 260 / 0.8);
+    background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -296,17 +315,27 @@
   }
 
   .animate-confetti {
-    animation: confetti 0.8s ease-out;
+    animation: confetti 0.8s ease-out forwards;
   }
 
   @keyframes confetti {
     0% {
-      transform: translateY(0) rotate(0deg);
+      transform: scale(0);
+      opacity: 0;
+    }
+
+    20% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    80% {
+      transform: scale(1);
       opacity: 1;
     }
 
     100% {
-      transform: translateY(-100px) rotate(360deg);
+      transform: scale(0);
       opacity: 0;
     }
   }
@@ -330,6 +359,16 @@
   }
 
   /* Mobile overrides */
+  /* Scrollbar hide utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   @media (max-width: 767px) {
     .touch-target {
       min-height: 44px;

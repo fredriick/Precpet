@@ -32,29 +32,29 @@ export default function ProgramsPage() {
     advanced: "bg-red-500/10 text-red-500 border-red-500/20",
   }
 
-  const categoryIcons: Record<string, string> = {
-    dribbling: "⚽",
-    passing: "👟",
-    shooting: "🥅",
-    defending: "🛡️",
-    fitness: "💪",
-    full: "🏆",
+  const categoryIcons: Record<string, React.ReactNode> = {
+    dribbling: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>,
+    passing: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>,
+    shooting: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+    defending: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    fitness: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>,
+    full: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
   }
 
-  const sportIcons: Record<string, string> = {
-    soccer: "⚽",
-    basketball: "🏀",
-    tennis: "🎾",
+  const sportIcons: Record<string, React.ReactNode> = {
+    soccer: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>,
+    basketball: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>,
+    tennis: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>,
   }
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Training Programs 🏋️</h1>
+          <h1 className="text-2xl font-bold mb-1">Training Programs</h1>
           <p className="text-muted-foreground text-xs">Structured workouts to level up fast</p>
         </div>
-        <div className="px-4 pb-2 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="px-4 pb-2 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide flex-wrap md:flex-nowrap">
           {(["all", "soccer", "basketball", "tennis"] as const).map((s) => (
             <button
               key={s}
@@ -66,11 +66,11 @@ export default function ProgramsPage() {
                   : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50",
               )}
             >
-              {s === "all" ? "All Sports" : `${sportIcons[s] || ""} ${s.charAt(0).toUpperCase() + s.slice(1)}`}
+              {s === "all" ? "All Sports" : <span className="inline-flex items-center gap-1.5">{sportIcons[s]} {s.charAt(0).toUpperCase() + s.slice(1)}</span>}
             </button>
           ))}
         </div>
-        <div className="px-4 pb-3 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="px-4 pb-3 max-w-lg md:max-w-5xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide flex-wrap md:flex-nowrap">
           {(["all", "beginner", "intermediate", "advanced"] as const).map((f) => (
             <button
               key={f}
@@ -109,7 +109,7 @@ export default function ProgramsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                      {sportIcons[program.sport] || categoryIcons[program.category] || "🏆"}
+                      {sportIcons[program.sport] || categoryIcons[program.category] || <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>}
                     </div>
                     <div>
                       <h3 className="font-semibold">{program.name}</h3>

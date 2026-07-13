@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import type { ReactNode } from "react"
 import { BottomNav } from "@/components/bottom-nav"
 import { SkillCard } from "@/components/skill-card"
 import { SkillSearch } from "@/components/skill-search"
@@ -45,15 +46,15 @@ export default function SkillsPage() {
     return true
   })
 
-  const categories: { id: FilterCategory; label: string; icon?: string }[] = [
+  const categories: { id: FilterCategory; label: string; icon?: React.ReactNode }[] = [
     { id: "all", label: "All Skills" },
-    { id: "bookmarked", label: "Bookmarked", icon: "❤️" },
-    { id: "dribbling", label: "Dribbling", icon: "⚽" },
-    { id: "passing", label: "Passing", icon: "👟" },
-    { id: "shooting", label: "Shooting", icon: "🥅" },
-    { id: "defending", label: "Defending", icon: "🛡️" },
-    { id: "movement", label: "Movement", icon: "🏃" },
-    { id: "striking", label: "Striking", icon: "🎾" },
+    { id: "bookmarked", label: "Bookmarked", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg> },
+    { id: "dribbling", label: "Dribbling", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg> },
+    { id: "passing", label: "Passing", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg> },
+    { id: "shooting", label: "Shooting", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+    { id: "defending", label: "Defending", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> },
+    { id: "movement", label: "Movement", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg> },
+    { id: "striking", label: "Striking", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
   ]
 
   const difficulties: FilterDifficulty[] = ["all", "beginner", "intermediate", "advanced"]
@@ -66,7 +67,7 @@ export default function SkillsPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold mb-1">Skills Library</h1>
-              <p className="text-muted-foreground text-xs">Master these moves 🏆</p>
+              <p className="text-muted-foreground text-xs">Master these moves</p>
             </div>
             <div className="text-xs font-medium px-3 py-1 rounded-full bg-secondary border border-border">
               {filteredSkills.length} {filteredSkills.length === 1 ? "skill" : "skills"}
@@ -78,7 +79,7 @@ export default function SkillsPage() {
 
       <main className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto space-y-5">
         {/* Sport Filter */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-wrap md:flex-nowrap">
           {(["all", "soccer", "basketball", "tennis"] as const).map((sport) => (
             <button
               key={sport}
@@ -90,14 +91,23 @@ export default function SkillsPage() {
                   : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
               )}
             >
-              {sport === "all" ? "All" : sport === "soccer" ? "⚽ Soccer" : sport === "basketball" ? "🏀 Basketball" : "🎾 Tennis"}
+              {sport === "all" ? "All" : <span className="inline-flex items-center gap-1">
+                {sport === "soccer" ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                ) : sport === "basketball" ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                )}
+                {sport.charAt(0).toUpperCase() + sport.slice(1)}
+              </span>}
             </button>
           ))}
         </div>
 
         {/* Category Filter */}
-        <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-          <div className="flex gap-2 min-w-max pb-2">
+        <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide md:overflow-visible">
+          <div className="flex gap-2 min-w-max pb-2 md:min-w-0 md:flex-wrap">
             {categories.map((cat) => {
               const isActive = categoryFilter === cat.id
               return (
@@ -155,8 +165,10 @@ export default function SkillsPage() {
 
         {filteredSkills.length === 0 && (
           <div className="text-center py-16 px-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4 text-3xl">
-              🔍
+            <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
             </div>
             <h3 className="font-semibold text-lg mb-2">No skills found</h3>
             <p className="text-muted-foreground text-sm max-w-[250px] mx-auto">

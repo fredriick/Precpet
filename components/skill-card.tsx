@@ -131,8 +131,15 @@ export function SkillCard({ skill, isLearned = false }: SkillCardProps) {
           <span className="px-2.5 py-1 rounded-full bg-secondary text-muted-foreground text-xs font-medium capitalize">
             {skill.category}
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground text-xs font-medium">
-            {skill.sport === "soccer" ? "⚽" : skill.sport === "basketball" ? "🏀" : "🎾"} {skill.sport}
+          <span className="px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground text-xs font-medium inline-flex items-center gap-1">
+            {skill.sport === "soccer" ? (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+            ) : skill.sport === "basketball" ? (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+            )}
+            {skill.sport}
           </span>
         </div>
       </div>

@@ -33,7 +33,7 @@ export default function ProgressPage() {
 
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Your Journey 🏔️</h1>
+          <h1 className="text-2xl font-bold mb-1">Your Journey</h1>
           <p className="text-muted-foreground text-xs">Track your progress and celebrate wins</p>
         </div>
 
@@ -72,8 +72,10 @@ export default function ProgressPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
-                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl">
-                  ⏱️
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.practiceMinutes}</p>
@@ -81,8 +83,10 @@ export default function ProgressPage() {
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl">
-                  🌊
+                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.avgFluidityScore || 0}</p>
@@ -90,8 +94,10 @@ export default function ProgressPage() {
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl">
-                  📚
+                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.skillsLearned.length}</p>
@@ -99,8 +105,10 @@ export default function ProgressPage() {
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
-                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl">
-                  🎯
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 019 9v.375M10.125 2.25A3.375 3.375 0 0113.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 013.375 3.375M9 15l2.25 2.25L15 12" />
+                  </svg>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.shotsOnTarget || 0}</p>
@@ -133,6 +141,8 @@ export default function ProgressPage() {
                 </div>
               </div>
             </div>
+
+            <FluidityTrendChart sessions={sessions} />
           </div>
         )}
 
@@ -153,12 +163,12 @@ export default function ProgressPage() {
               ))}
               {unlockedAchievements.length === 0 && (
                 <div className="col-span-3 text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
-                  <div className="text-3xl">🔒</div>
-                  <p>No badges yet. Start practicing to earn them! 🏅</p>
-            {/* Fluidity Trend Chart */}
-            <FluidityTrendChart sessions={sessions} />
-          </div>
-        )}
+                  <svg className="w-8 h-8 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.896m0 0a6.023 6.023 0 01-2.77-.896m0 0A6.003 6.003 0 015.25 4.236" />
+                  </svg>
+                  <p>No badges yet. Start practicing to earn them!</p>
+                </div>
+              )}
             </div>
 
             {lockedAchievements.length > 0 && (

@@ -156,7 +156,7 @@ function fallbackRecommendation(
   }
 
   if (userStats.passAccuracy > 0 && userStats.passAccuracy < 65) {
-    const skill = allSkills.find((s) => s.id === "inside-turn" && !userStats.skillsLearned.includes(s.id))
+    const skill = allSkills.find((s) => s.id === "drag-back" && !userStats.skillsLearned.includes(s.id))
     if (skill) {
       return NextResponse.json({
         action: "RECOMMEND",

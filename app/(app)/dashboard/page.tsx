@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
 import { PreceptLogo } from "@/components/precept-logo"
 import { BottomNav } from "@/components/bottom-nav"
 import { MotionIndicator } from "@/components/motion-indicator"
@@ -13,20 +14,68 @@ import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { WeeklyActivityChart } from "@/components/weekly-activity-chart"
 import { Button } from "@/components/ui/button"
-import { allSkills } from "@/lib/skills-database"
+import { allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
-import Link from "next/link"
+import { getAllProgramProgress } from "@/lib/storage"
+import { getProgramById } from "@/lib/programs-database"
 import { cn } from "@/lib/utils"
+import type { PracticeSession, ProgramProgress, Sport, Program } from "@/lib/types"
+import { startOfDay, subDays } from "date-fns"
+
+const sportLabels: Record<Sport, string> = {
+  soccer: "Soccer",
+  basketball: "Basketball",
+  tennis: "Tennis",
+}
+
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+function timeAgo(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diffMin = Math.round((now - then) / 60000)
+  if (diffMin < 1) return "just now"
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHrs = Math.floor(diffMin / 60)
+  if (diffHrs < 24) return `${diffHrs}h ago`
+  const diffDays = Math.floor(diffHrs / 24)
+  return `${diffDays}d ago`
+}
+
+function sessionsThisWeek(sessions: PracticeSession[]): PracticeSession[] {
+  const today = startOfDay(new Date())
+  const weekAgo = subDays(today, 7)
+  return sessions.filter((s) => {
+    if (!s.endTime) return false
+    const sessionDate = startOfDay(new Date(s.endTime))
+    return sessionDate >= weekAgo && sessionDate <= today
+  })
+}
+
+function weeklyMinutesTotal(sessions: PracticeSession[]): number {
+  return sessionsThisWeek(sessions).reduce((acc, s) => {
+    const start = new Date(s.startTime).getTime()
+    const end = s.endTime ? new Date(s.endTime).getTime() : start
+    return acc + Math.round((end - start) / 60000)
+  }, 0)
+}
 
 export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
-  const { userStats, isOnboarded, isLoading, sessions } = useApp()
+  const { userStats, isOnboarded, isLoading, sessions, settings } = useApp()
   const { user } = useAuth()
-  const { recommendation, isLoading: isRecommendationLoading } = useRecommendation(analysis.fluidityScore)
+  const { recommendation } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
   const [recommendedSkill, setRecommendedSkill] = useState(allSkills[0])
+  const [activeProgram, setActiveProgram] = useState<{ program: Program; progress: ProgramProgress } | null>(null)
 
-  // Show recommendation when it arrives
+  const preferredSport = settings.preferredSport
+
   useEffect(() => {
     if (recommendation && recommendation.action === "RECOMMEND" && recommendation.skill) {
       setRecommendedSkill(recommendation.skill)
@@ -36,7 +85,22 @@ export default function HomePage() {
     }
   }, [recommendation])
 
-  // Get time-based greeting
+  useEffect(() => {
+    const allProgress = getAllProgramProgress()
+    const inProgress = Object.entries(allProgress).find(([, p]) => !p.completedAt)
+    if (inProgress) {
+      const program = getProgramById(inProgress[0])
+      if (program) setActiveProgram({ program, progress: inProgress[1] })
+    } else {
+      setActiveProgram(null)
+    }
+  }, [sessions])
+
+  const weeklySessions = useMemo(() => sessionsThisWeek(sessions), [sessions])
+  const weekMinutes = useMemo(() => weeklyMinutesTotal(sessions), [sessions])
+  const goalMinutes = 60
+  const goalProgress = Math.min(100, Math.round((weekMinutes / goalMinutes) * 100))
+
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return "Good morning"
@@ -44,11 +108,18 @@ export default function HomePage() {
     return "Good evening"
   }
 
-  // Latest achievement for display
   const latestAchievementId = userStats.achievements[userStats.achievements.length - 1]
   const latestAchievement = latestAchievementId ? achievements.find((a) => a.id === latestAchievementId) : undefined
 
-  // Show loading state
+  const sportSkills = useMemo(() => getSkillsBySport(preferredSport), [preferredSport])
+  const sportLearnedSkills = userStats.skillsLearned.filter((id) => sportSkills.some((s) => s.id === id))
+
+  const recentSessions = useMemo(() => {
+    return [...sessions]
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(0, 3)
+  }, [sessions])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -60,37 +131,35 @@ export default function HomePage() {
     )
   }
 
-  // Show onboarding for new users
   if (!isOnboarded) {
     return <Onboarding />
   }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-16 max-w-lg md:max-w-5xl mx-auto">
           <div className="flex items-center gap-3">
             <PreceptLogo className="w-9 h-9" />
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || "athlete"}! 👋</h1>
-              <p className="text-xs text-muted-foreground">Let's level up today</p>
+              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || "athlete"}!</h1>
+              <p className="text-xs text-muted-foreground">{sportLabels[preferredSport]} — let's level up today</p>
             </div>
           </div>
         </div>
       </header>
 
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-6">
-        {/* Streak Widget */}
         <StreakWidget />
 
-        {/* Skill Recommendation Card */}
         {showRecommendation && (
           <div className="rounded-2xl bg-gradient-to-br from-card to-primary/5 border-2 border-primary/30 p-6 glow-primary animate-slide-up">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">💡</span>
-                <span className="text-xs font-medium text-primary uppercase tracking-wider">Hey! Want to try this?</span>
+                <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span className="text-xs font-medium text-primary uppercase tracking-wider">Suggested skill</span>
               </div>
               <button
                 onClick={() => setShowRecommendation(false)}
@@ -107,61 +176,232 @@ export default function HomePage() {
 
             <Link href={`/skills/${recommendedSkill.id}`}>
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground hover-lift">
-                Let's Learn It! 🚀
+                Learn this skill
               </Button>
             </Link>
           </div>
         )}
 
-        {/* Latest Achievement */}
-        {userStats.achievements.length > 0 && (
+        {latestAchievement && (
           <div className="rounded-2xl bg-card p-5 border border-border">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Latest Achievement 🏆</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Latest Achievement</h3>
               <Link href="/progress" className="text-xs text-primary hover:underline">
                 View All
               </Link>
             </div>
             <div className="flex justify-center">
-              {latestAchievement && (
-                <AchievementBadge
-                  achievement={latestAchievement}
-                  isUnlocked={true}
-                  size="md"
-                />
-              )}
+              <AchievementBadge achievement={latestAchievement} isUnlocked={true} size="md" />
             </div>
           </div>
         )}
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Fluidity Avg</p>
-            <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "–"}</p>
-          </div>
-          <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Practice Time</p>
-            <p className="text-3xl font-bold font-mono text-foreground">
-              {userStats.practiceMinutes || 0}
-              <span className="text-lg text-muted-foreground">m</span>
-            </p>
-          </div>
+          <Link href="/progress" className="block">
+            <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4v16h18V4H3zm16 14H5V8h14v10z" />
+                </svg>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Fluidity Avg</p>
+              </div>
+              <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
+            </div>
+          </Link>
+          <Link href="/profile" className="block">
+            <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Practice Time</p>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">
+                {formatMinutes(userStats.practiceMinutes || 0)}
+              </p>
+            </div>
+          </Link>
+          <Link href="/progress" className="block">
+            <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">This Week</p>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">
+                {weeklySessions.length}
+                <span className="text-lg text-muted-foreground"> sessions</span>
+              </p>
+            </div>
+          </Link>
+          <Link href="/progress" className="block">
+            <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Weekly Goal</p>
+              </div>
+              <p className="text-3xl font-bold font-mono text-foreground">
+                {formatMinutes(weekMinutes)}
+                <span className="text-sm text-muted-foreground"> / {formatMinutes(goalMinutes)}</span>
+              </p>
+              <div className="w-full bg-secondary rounded-full h-1.5 mt-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
+            </div>
+          </Link>
         </div>
 
-        {/* Weekly Activity Chart */}
+        {preferredSport === "soccer" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Pass Accuracy</p>
+              <p className="text-3xl font-bold font-mono text-blue-400">{userStats.passAccuracy || 0}%</p>
+              <div className="w-full bg-secondary rounded-full h-1.5 mt-2 overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${userStats.passAccuracy || 0}%` }} />
+              </div>
+            </div>
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Successful Dribbles</p>
+              <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
+            </div>
+          </div>
+        )}
+
+        {preferredSport === "basketball" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Shots on Target</p>
+              <p className="text-3xl font-bold font-mono text-orange-400">{userStats.shotsOnTarget || 0}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Successful Dribbles</p>
+              <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
+            </div>
+          </div>
+        )}
+
+        {preferredSport === "tennis" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Avg Fluidity</p>
+              <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-4 border border-border">
+              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Matches Played</p>
+              <p className="text-3xl font-bold font-mono text-foreground">{userStats.matchesPlayed || 0}</p>
+            </div>
+          </div>
+        )}
+
         <WeeklyActivityChart sessions={sessions} />
 
-        {/* Motion Sensor */}
-        <MotionIndicator
-          fluidityScore={analysis.fluidityScore}
-          intensity={analysis.intensity}
-          isActive={analysis.isActive}
-          isTracking={isTracking}
-        />
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Sessions</h3>
+            {recentSessions.length > 0 && (
+              <Link href="/progress" className="text-xs text-primary hover:underline">
+                View All
+              </Link>
+            )}
+          </div>
+          {recentSessions.length > 0 ? (
+            <div className="space-y-3">
+              {recentSessions.map((s) => {
+                const skill = allSkills.find((sk) => sk.id === s.skillId)
+                const avgScore = s.fluidityScores.length > 0
+                  ? Math.round(s.fluidityScores.reduce((a, b) => a + b, 0) / s.fluidityScores.length)
+                  : null
+                const duration = s.endTime
+                  ? Math.round((new Date(s.endTime).getTime() - new Date(s.startTime).getTime()) / 60000)
+                  : 0
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/practice?id=${s.skillId}`}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{skill?.name || s.skillId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {timeAgo(s.startTime)}
+                        {duration > 0 && ` · ${duration}m`}
+                      </p>
+                    </div>
+                    {avgScore !== null && (
+                      <div className={cn(
+                        "text-sm font-mono font-semibold",
+                        avgScore >= 70 ? "text-emerald-400" : avgScore >= 40 ? "text-amber-400" : "text-red-400",
+                      )}>
+                        {avgScore}
+                      </div>
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <svg className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-muted-foreground text-sm">No sessions yet</p>
+              <Link href="/practice" className="text-xs text-primary hover:underline mt-1 inline-block">
+                Start your first practice
+              </Link>
+            </div>
+          )}
+        </div>
 
-        {/* Motion Control */}
-        <div className="space-y-3">
+        {activeProgram && (
+          <div className="rounded-2xl bg-gradient-to-br from-card to-primary/5 border border-primary/20 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Program</h3>
+            </div>
+            <p className="text-lg font-bold mb-1">{activeProgram.program.name}</p>
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+              <span>{activeProgram.progress.completedSteps} / {activeProgram.progress.totalSteps} steps</span>
+              <span>{Math.round((activeProgram.progress.completedSteps / activeProgram.progress.totalSteps) * 100)}%</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2 mb-4 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all"
+                style={{ width: `${(activeProgram.progress.completedSteps / activeProgram.progress.totalSteps) * 100}%` }}
+              />
+            </div>
+            <Link href={`/programs/${activeProgram.program.id}`}>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                Continue Program
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        <div className="md:hidden">
+          <MotionIndicator
+            fluidityScore={analysis.fluidityScore}
+            intensity={analysis.intensity}
+            isActive={analysis.isActive}
+            isTracking={isTracking}
+          />
+        </div>
+
+        <div className="md:hidden">
           {!isSupported ? (
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
               <p className="text-amber-500 text-sm text-center">
@@ -188,47 +428,49 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Skills Learned */}
         <div className="rounded-2xl bg-card p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Skills Learned</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              {sportLabels[preferredSport]} Skills Learned
+            </h3>
             <span className="text-xs text-muted-foreground">
-              {userStats.skillsLearned.length} / {allSkills.length}
+              {sportLearnedSkills.length} / {sportSkills.length}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {userStats.skillsLearned.map((skillId) => {
+            {sportLearnedSkills.map((skillId) => {
               const skill = allSkills.find((s) => s.id === skillId)
               return skill ? (
-                <div key={skillId} className="px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
+                <Link
+                  key={skillId}
+                  href={`/skills/${skillId}`}
+                  className="px-3 py-1.5 rounded-full bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors"
+                >
                   {skill.name}
-                </div>
+                </Link>
               ) : null
             })}
-            {userStats.skillsLearned.length === 0 && (
-              <p className="text-muted-foreground text-sm">Complete practice sessions to unlock skills</p>
+            {sportLearnedSkills.length === 0 && (
+              <div className="text-center py-6 w-full">
+                <svg className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <p className="text-muted-foreground text-sm">No {sportLabels[preferredSport].toLowerCase()} skills unlocked yet</p>
+                <Link href="/skills" className="text-xs text-primary hover:underline mt-1 inline-block">
+                  Browse {sportLabels[preferredSport].toLowerCase()} skills
+                </Link>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
           <Link href="/practice" className="block">
             <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/50 transition-colors h-full">
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+                <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <h4 className="font-semibold mb-1">Start Practice</h4>
@@ -238,13 +480,8 @@ export default function HomePage() {
           <Link href="/skills" className="block">
             <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/50 transition-colors h-full">
               <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
+                <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <h4 className="font-semibold mb-1">Browse Skills</h4>

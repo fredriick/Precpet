@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { PreceptLogo } from "@/components/precept-logo"
@@ -8,7 +8,13 @@ import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { user, login } = useAuth()
+
+  useEffect(() => {
+    if (user) router.replace("/dashboard")
+  }, [user, router])
+
+  if (user) return null
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({})
@@ -17,8 +23,9 @@ export default function LoginPage() {
 
   const validate = () => {
     const errs: typeof errors = {}
-    if (!email) errs.email = "Email is required"
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Invalid email format"
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) errs.email = "Email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) errs.email = "Invalid email format"
     if (!password) errs.password = "Password is required"
     else if (password.length < 6) errs.password = "Password must be at least 6 characters"
     return errs

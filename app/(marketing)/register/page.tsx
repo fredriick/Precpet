@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { PreceptLogo } from "@/components/precept-logo"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth, isGuestUser } from "@/contexts/auth-context"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { register } = useAuth()
+  const { user, register } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -18,12 +18,20 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
+  useEffect(() => {
+    if (user && !isGuestUser(user)) router.replace("/dashboard")
+  }, [user, router])
+
+  const isGuest = isGuestUser(user)
+
   const validate = () => {
     const errs: typeof errors = {}
-    if (!name) errs.name = "Name is required"
-    else if (name.length < 2) errs.name = "Name must be at least 2 characters"
-    if (!email) errs.email = "Email is required"
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Invalid email format"
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    if (!trimmedName) errs.name = "Name is required"
+    else if (trimmedName.length < 2) errs.name = "Name must be at least 2 characters"
+    if (!trimmedEmail) errs.email = "Email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) errs.email = "Invalid email format"
     if (!password) errs.password = "Password is required"
     else if (password.length < 8) errs.password = "Password must be at least 8 characters"
     else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) errs.password = "Password must include uppercase, lowercase, and a number"
@@ -83,6 +91,12 @@ export default function RegisterPage() {
 
         <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-8">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            {isGuest && (
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-center">
+                <p className="text-emerald-400 text-sm font-medium">Your practice data will be preserved when you create an account.</p>
+              </div>
+            )}
+
             {errors.general && (
               <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3">
                 <p className="text-red-400 text-sm">{errors.general}</p>
@@ -164,8 +178,17 @@ export default function RegisterPage() {
                   {["uppercase", "lowercase", "number", "8+ chars"].map((req, i) => {
                     const met = i === 0 ? /[A-Z]/.test(password) : i === 1 ? /[a-z]/.test(password) : i === 2 ? /\d/.test(password) : password.length >= 8
                     return (
-                      <span key={req} className={`text-[10px] px-1.5 py-0.5 rounded ${met ? "bg-emerald-500/20 text-emerald-400" : "bg-white/[0.04] text-white/30"}`}>
-                        {met ? "✓" : "○"} {req}
+                      <span key={req} className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 ${met ? "bg-emerald-500/20 text-emerald-400" : "bg-white/[0.04] text-white/30"}`}>
+                        {met ? (
+                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="9" />
+                          </svg>
+                        )}
+                        {req}
                       </span>
                     )
                   })}

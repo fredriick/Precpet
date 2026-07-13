@@ -18,7 +18,9 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
     if (sortedSessions.length === 0) {
         return (
             <div className="text-center py-10 bg-secondary/20 rounded-2xl border border-dashed border-border">
-                <p className="text-4xl mb-2">📝</p>
+                <svg className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
                 <p className="font-medium">No practice history yet</p>
                 <p className="text-xs text-muted-foreground mt-1">
                     Complete your first guided session to see it here!
@@ -50,11 +52,19 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                     >
                         <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                                    {skill?.sport === "soccer" && "⚽"}
-                                    {skill?.sport === "basketball" && "🏀"}
-                                    {skill?.sport === "tennis" && "🎾"}
-                                    {!skill && "📝"}
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    {skill?.sport === "soccer" && (
+                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                                    )}
+                                    {skill?.sport === "basketball" && (
+                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                                    )}
+                                    {skill?.sport === "tennis" && (
+                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
+                                    )}
+                                    {!skill && (
+                                        <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-sm">{skill?.name || "Practice Session"}</h4>
