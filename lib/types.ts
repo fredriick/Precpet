@@ -56,6 +56,7 @@ export interface PracticeSession {
   endTime?: string
   fluidityScores: number[]
   completed: boolean
+  notes?: string
 }
 
 export interface ProgramStep {

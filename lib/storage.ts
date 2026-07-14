@@ -234,6 +234,7 @@ export function markSkillLearned(skillId: string): UserStats {
 export function completePracticeSession(
   session: PracticeSession,
   fluidityScores: number[],
+  notes?: string,
 ): { session: PracticeSession; stats: UserStats } {
   const endTime = new Date().toISOString()
   const completedSession: PracticeSession = {
@@ -241,6 +242,7 @@ export function completePracticeSession(
     endTime,
     fluidityScores,
     completed: true,
+    ...(notes !== undefined ? { notes } : {}),
   }
 
   savePracticeSession(completedSession)

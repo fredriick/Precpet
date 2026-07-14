@@ -264,7 +264,7 @@ export default function HomePage() {
 
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-6">
         {lastSkill && (
-          <Link href={`/practice?id=${lastSession.skillId}`} className="block">
+          <Link href={`/practice?skill=${lastSession.skillId}`} className="block">
             <div className="rounded-2xl bg-gradient-to-br from-primary/15 to-card border border-primary/30 p-4 flex items-center gap-4 hover:border-primary/50 transition-colors hover-lift">
               <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -526,7 +526,7 @@ export default function HomePage() {
                 return (
                   <Link
                     key={s.id}
-                    href={`/practice?id=${s.skillId}`}
+                    href={`/practice?skill=${s.skillId}`}
                     className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 hover:bg-accent/50 transition-colors"
                   >
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

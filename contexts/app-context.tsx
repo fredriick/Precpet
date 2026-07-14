@@ -32,7 +32,7 @@ interface AppContextValue {
 
   updateStats: (updates: Partial<UserStats>) => void
   addSession: (session: PracticeSession) => void
-  finishSession: (session: PracticeSession, fluidityScores: number[]) => void
+  finishSession: (session: PracticeSession, fluidityScores: number[], notes?: string) => void
   markSkillLearned: (skillId: string) => void
   updateSettings: (settings: Partial<UserSettings>) => void
   completeOnboarding: () => void
@@ -109,8 +109,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const finishSession = useCallback(
-    (session: PracticeSession, fluidityScores: number[]) => {
-      const { session: completed, stats } = completePracticeSession(session, fluidityScores)
+    (session: PracticeSession, fluidityScores: number[], notes?: string) => {
+      const { session: completed, stats } = completePracticeSession(session, fluidityScores, notes)
       setSessions((prev) => [completed, ...prev.filter((s) => s.id !== completed.id)])
       setUserStats(stats)
       // Update streak on session completion

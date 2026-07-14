@@ -102,6 +102,12 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                             </div>
                         </div>
 
+                        {session.notes && (
+                            <p className="mt-3 text-xs text-muted-foreground italic bg-secondary/20 rounded-lg px-3 py-2 border border-border/40">
+                                &ldquo;{session.notes}&rdquo;
+                            </p>
+                        )}
+
                         {/* Completion Badge */}
                         {session.completed && (
                             <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center border border-background">
