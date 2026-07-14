@@ -34,7 +34,7 @@ export function useStreakReminder(params: {
       try {
         new Notification("Keep your streak alive!", {
           body: `You're on a ${currentStreak}-day streak. Practice today so you don't lose it.`,
-          icon: "/icon-192.png",
+          icon: "/icon-192.jpg",
         })
         localStorage.setItem(LAST_NOTIFIED_KEY, todayKey())
       } catch {
