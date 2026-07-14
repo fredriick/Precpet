@@ -100,6 +100,35 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Weekly Goal */}
+        <section className="rounded-2xl bg-card border border-border p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-semibold">Weekly Practice Goal</h2>
+            <span className="text-sm font-mono font-bold text-primary">
+              {settings.weeklyGoalMinutes >= 60
+                ? `${Math.floor(settings.weeklyGoalMinutes / 60)}h${settings.weeklyGoalMinutes % 60 ? ` ${settings.weeklyGoalMinutes % 60}m` : ""}`
+                : `${settings.weeklyGoalMinutes}m`}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">Target practice minutes per week</p>
+          <div className="flex flex-wrap gap-2">
+            {[30, 60, 90, 120, 180, 300].map((mins) => (
+              <button
+                key={mins}
+                onClick={() => updateSettings({ weeklyGoalMinutes: mins })}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-all border",
+                  settings.weeklyGoalMinutes === mins
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
+              >
+                {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Theme Toggle */}
         <section className="rounded-2xl bg-card border border-border p-5">
           <h2 className="font-semibold mb-1">Appearance</h2>

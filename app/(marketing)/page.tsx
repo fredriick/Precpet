@@ -1,11 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { PreceptLogo } from "@/components/precept-logo"
-import { useAuth } from "@/contexts/auth-context"
 import { HeroScene } from "@/components/hero-scene"
 import { ScrollReveal, StaggerContainer, StaggerItem, FloatIn } from "@/components/scroll-animations"
 
@@ -74,8 +72,6 @@ function AnimatedStat({ value, suffix, label, display }: { value: number; suffix
 }
 
 export default function LandingPage() {
-  const { user } = useAuth()
-  const router = useRouter()
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
   const { scrollYProgress } = useScroll()
@@ -97,12 +93,6 @@ export default function LandingPage() {
     const unsub = sceneProgress.on("change", setProgress)
     return () => unsub()
   }, [sceneProgress])
-
-  useEffect(() => {
-    if (user) router.replace("/dashboard")
-  }, [user, router])
-
-  if (user) return null
 
   return (
     <div className="relative bg-[#0a0a0f] text-white" onMouseMove={handleMouseMove}>

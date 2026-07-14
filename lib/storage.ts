@@ -37,6 +37,7 @@ export interface UserSettings {
   preferredDifficulty: "beginner" | "intermediate" | "advanced" | "all"
   preferredSport: Sport
   theme: "dark" | "light"
+  weeklyGoalMinutes: number
 }
 
 const defaultSettings: UserSettings = {
@@ -46,6 +47,7 @@ const defaultSettings: UserSettings = {
   preferredDifficulty: "all",
   preferredSport: "soccer",
   theme: "dark",
+  weeklyGoalMinutes: 60,
 }
 
 const DATA_VERSION_KEY = "precept_data_version"

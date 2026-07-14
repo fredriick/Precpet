@@ -68,6 +68,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     preferredDifficulty: "all",
     preferredSport: "soccer",
     theme: "dark",
+    weeklyGoalMinutes: 60,
   })
   const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
