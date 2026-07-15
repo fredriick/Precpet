@@ -223,6 +223,31 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Data Management */}
+        <section className="rounded-2xl bg-card border border-border p-5">
+          <h2 className="font-semibold mb-1">Data &amp; Privacy</h2>
+          <p className="text-xs text-muted-foreground mb-4">Back up, restore, or reset your progress</p>
+          <Link
+            href="/profile/export"
+            className="flex items-center justify-between rounded-xl bg-secondary/50 hover:bg-secondary p-4 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Data Management</p>
+                <p className="text-xs text-muted-foreground">Export, import &amp; reset</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </section>
+
         {/* About */}
         <section className="rounded-2xl bg-card border border-border p-5 text-center">
           <p className="text-sm font-semibold mb-1">Precept Coach</p>

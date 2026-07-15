@@ -25,6 +25,19 @@ export default function ExportPage() {
         setStatus({ type: "success", message: "File downloaded! Keep it safe." })
     }
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+            const text = typeof ev.target?.result === "string" ? ev.target.result : ""
+            setImportData(text)
+            setStatus({ type: "info", message: "File loaded. Click Import Data to restore." })
+        }
+        reader.onerror = () => setStatus({ type: "error", message: "Could not read file." })
+        reader.readAsText(file)
+    }
+
     const handleImport = () => {
         try {
             if (!importData) {
@@ -70,13 +83,13 @@ export default function ExportPage() {
                 <div className="space-y-4">
                     <h2 className="text-lg font-semibold">Export Data</h2>
                     <p className="text-sm text-muted-foreground">
-                        Save your progress by exporting your data. We'll copy a JSON code to your clipboard which you can save as a text file.
+                        Save your progress by downloading a backup file. Keep it somewhere safe so you can restore it later.
                     </p>
                     <Button onClick={handleExport} className="w-full">
                         <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                         </svg>
-                        Copy Data to Clipboard
+                        Download Backup File
                     </Button>
                 </div>
 
@@ -85,8 +98,15 @@ export default function ExportPage() {
                 <div className="space-y-4">
                     <h2 className="text-lg font-semibold">Import Data</h2>
                     <p className="text-sm text-muted-foreground">
-                        Paste your previously exported data here to restore your progress.
+                        Upload your backup file, or paste the exported data below to restore your progress.
                     </p>
+                    <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-border text-sm text-muted-foreground cursor-pointer hover:bg-secondary/50 transition-colors">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 7.5m0 0L16.5 12M12 7.5v13.5" />
+                        </svg>
+                        Choose Backup File
+                        <input type="file" accept="application/json,.json" onChange={handleFileUpload} className="hidden" />
+                    </label>
                     <textarea
                         value={importData}
                         onChange={(e) => setImportData(e.target.value)}
