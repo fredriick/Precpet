@@ -1,17 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
+import { AchievementBadge } from "@/components/achievement-badge"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { allSkills } from "@/lib/skills-database"
+import { achievements } from "@/lib/achievements-database"
 import { cn } from "@/lib/utils"
 import { LogoutButton } from "@/components/logout-button"
 
 export default function ProfilePage() {
   const { userStats, settings, updateStats, updateSettings, sessions } = useApp()
+  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     matchesPlayed: userStats.matchesPlayed,
@@ -28,6 +31,23 @@ export default function ProfilePage() {
 
   const totalSkills = allSkills.length
   const learnedSkills = userStats.skillsLearned.length
+
+  const { bestFluidity, longestSessionMin } = useMemo(() => {
+    let best = 0
+    let longest = 0
+    for (const s of sessions) {
+      for (const score of s.fluidityScores) {
+        if (score > best) best = score
+      }
+      if (s.endTime) {
+        const mins = Math.round((new Date(s.endTime).getTime() - new Date(s.startTime).getTime()) / 60000)
+        if (mins > longest) longest = mins
+      }
+    }
+    return { bestFluidity: best, longestSessionMin: longest }
+  }, [sessions])
+
+  const unlockedAchievements = achievements.filter((a) => userStats.achievements.includes(a.id))
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -54,10 +74,15 @@ export default function ProfilePage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold">Athlete</h2>
+              <h2 className="text-xl font-bold">{user?.name || "Athlete"}</h2>
               <p className="text-muted-foreground text-sm">
                 {learnedSkills}/{totalSkills} skills mastered
               </p>
+              {user?.createdAt && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Member since {new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+                </p>
+              )}
             </div>
           </div>
 
@@ -75,6 +100,82 @@ export default function ProfilePage() {
               <p className="text-xs text-muted-foreground">Avg Score</p>
             </div>
           </div>
+        </div>
+
+        {/* Streak & Personal Bests */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Streak &amp; Bests</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 01-1.925 3.546 5.974 5.974 0 01-2.133 1A3.75 3.75 0 0012 18z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-bold font-mono">{userStats.currentStreak}</p>
+                <p className="text-xs text-muted-foreground">Current Streak</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-bold font-mono">{userStats.longestStreak}</p>
+                <p className="text-xs text-muted-foreground">Longest Streak</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-bold font-mono">{bestFluidity}</p>
+                <p className="text-xs text-muted-foreground">Best Fluidity</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xl font-bold font-mono">{longestSessionMin}m</p>
+                <p className="text-xs text-muted-foreground">Longest Session</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Achievements Showcase */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Achievements</h3>
+            <span className="text-xs text-muted-foreground">
+              {unlockedAchievements.length}/{achievements.length}
+            </span>
+          </div>
+          {unlockedAchievements.length > 0 ? (
+            <div className="grid grid-cols-4 gap-3 justify-items-center">
+              {unlockedAchievements.slice(0, 8).map((a) => (
+                <AchievementBadge key={a.id} achievement={a} isUnlocked size="sm" />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No achievements yet. Keep practicing to unlock them!
+            </p>
+          )}
+          <Link href="/progress" className="mt-4 block text-center text-xs text-primary font-medium">
+            View all achievements →
+          </Link>
         </div>
 
         {/* Game Stats */}
