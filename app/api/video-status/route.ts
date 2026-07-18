@@ -22,7 +22,11 @@ export async function GET(request: Request) {
     }
 
     if (!GEMINI_API_KEY) {
-      return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 })
+      return NextResponse.json({
+        done: true,
+        videoUrl: `/placeholder-videos/placeholder.mp4`,
+        demo: true,
+      })
     }
 
     // Check operation status

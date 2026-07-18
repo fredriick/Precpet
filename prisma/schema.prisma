@@ -1,0 +1,106 @@
+// Prisma schema for Precept (Supabase Postgres).
+// Apply with: pnpm prisma db push   (requires SUPABASE_DB_URL with 5432 access)
+// Or generate a migration: pnpm prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Note: Supabase manages `auth.users`. We do NOT model it in Prisma to avoid
+// Prisma trying to create/drop it. The FK columns (user_id uuid) remain.
+
+model Profile {
+  id        String   @id @db.Uuid
+  name      String   @default("Athlete")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("profiles")
+}
+
+model UserStat {
+  userId                   String   @id @db.Uuid @map("user_id")
+  matchesPlayed            Int      @default(0) @map("matches_played")
+  ballLossesUnderPressure  Int      @default(0) @map("ball_losses_under_pressure")
+  successfulDribbles       Int      @default(0) @map("successful_dribbles")
+  passAccuracy             Int      @default(0) @map("pass_accuracy")
+  shotsOnTarget            Int      @default(0) @map("shots_on_target")
+  avgFluidityScore         Int      @default(0) @map("avg_fluidity_score")
+  practiceMinutes          Int      @default(0) @map("practice_minutes")
+  skillsLearned            String[] @default([]) @map("skills_learned")
+  bookmarkedSkills         String[] @default([]) @map("bookmarked_skills")
+  achievements             Json     @default("[]") @map("achievements")
+  currentStreak            Int      @default(0) @map("current_streak")
+  longestStreak            Int      @default(0) @map("longest_streak")
+  lastPracticeDate         String?  @map("last_practice_date")
+  updatedAt                DateTime @default(now()) @map("updated_at")
+
+  @@map("user_stats")
+}
+
+model PracticeSession {
+  id             String
+  userId         String   @db.Uuid @map("user_id")
+  skillId        String   @map("skill_id")
+  sport          String
+  startTime      DateTime @map("start_time")
+  endTime        DateTime? @map("end_time")
+  fluidityScores Int[]    @default([]) @map("fluidity_scores")
+  completed      Boolean  @default(false)
+  notes          String?
+
+  @@id([userId, id])
+  @@map("practice_sessions")
+}
+
+model UserSetting {
+  userId             String   @id @db.Uuid @map("user_id")
+  hapticFeedback     Boolean  @default(true) @map("haptic_feedback")
+  soundEffects       Boolean  @default(true) @map("sound_effects")
+  practiceReminders  Boolean  @default(true) @map("practice_reminders")
+  preferredDifficulty String  @default("all") @map("preferred_difficulty")
+  preferredSport     String   @default("soccer") @map("preferred_sport")
+  theme              String   @default("dark")
+  weeklyGoalMinutes  Int      @default(60) @map("weekly_goal_minutes")
+  updatedAt          DateTime @default(now()) @map("updated_at")
+
+  @@map("user_settings")
+}
+
+model ProgramProgress {
+  userId        String    @db.Uuid @map("user_id")
+  programId     String    @map("program_id")
+  completedSteps Int      @default(0) @map("completed_steps")
+  totalSteps    Int       @default(0) @map("total_steps")
+  startedAt     DateTime? @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  lastPracticed DateTime? @map("last_practiced")
+
+  @@id([userId, programId])
+  @@map("program_progress")
+}
+
+model GeneratedVideo {
+  userId   String @db.Uuid @map("user_id")
+  skillId  String @map("skill_id")
+  videoUrl String @map("video_url")
+
+  @@id([userId, skillId])
+  @@map("generated_videos")
+}
+
+model LeaderboardEntry {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @map("session_token")
+  name         String   @default("Anonymous")
+  sport        String?
+  week         Int
+  minutes      Int      @default(0)
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  @@unique([sessionToken, week])
+  @@map("leaderboard_entries")
+}

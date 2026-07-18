@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { PreceptLogo } from "@/components/precept-logo"
-import { useAuth, isGuestUser } from "@/contexts/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -19,10 +19,8 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
-    if (user && !isGuestUser(user)) router.replace("/dashboard")
+    if (user) router.replace("/dashboard")
   }, [user, router])
-
-  const isGuest = isGuestUser(user)
 
   const validate = () => {
     const errs: typeof errors = {}
@@ -48,11 +46,11 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      const success = await register(name, email, password)
-      if (success) {
-        router.replace("/dashboard")
+      const { error } = await register(name, email, password)
+      if (error) {
+        setErrors({ general: error })
       } else {
-        setErrors({ general: "An account with this email already exists" })
+        router.replace("/dashboard")
       }
     } catch {
       setErrors({ general: "Something went wrong. Please try again." })
@@ -91,12 +89,6 @@ export default function RegisterPage() {
 
         <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-8">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            {isGuest && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-center">
-                <p className="text-emerald-400 text-sm font-medium">Your practice data will be preserved when you create an account.</p>
-              </div>
-            )}
-
             {errors.general && (
               <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3">
                 <p className="text-red-400 text-sm">{errors.general}</p>

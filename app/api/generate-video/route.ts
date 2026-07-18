@@ -51,8 +51,9 @@ export async function POST(request: Request) {
     if (!GEMINI_API_KEY) {
       return NextResponse.json({
         success: true,
-        videoUrl: `/placeholder-videos/${skillId}.mp4`,
+        videoUrl: `/placeholder-videos/placeholder.mp4`,
         status: "mock",
+        demo: true,
         message: "Demo mode - set GEMINI_API_KEY for real video generation",
       })
     }

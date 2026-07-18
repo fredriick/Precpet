@@ -39,11 +39,11 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      const success = await login(email, password)
-      if (success) {
-        router.replace("/dashboard")
+      const { error } = await login(email, password)
+      if (error) {
+        setErrors({ general: error })
       } else {
-        setErrors({ general: "Invalid email or password" })
+        router.replace("/dashboard")
       }
     } catch {
       setErrors({ general: "Something went wrong. Please try again." })

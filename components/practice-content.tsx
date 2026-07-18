@@ -40,7 +40,12 @@ export function PracticeContent() {
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [completedSession, setCompletedSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [goalMinutes, setGoalMinutes] = useState<number | null>(null)
+  const [goalMinutes, setGoalMinutes] = useState<number | null>(() => {
+    const goal = settings.weeklyGoalMinutes || 0
+    // Per-session target: a reasonable slice of the weekly goal (min 5, max 30).
+    if (goal <= 0) return null
+    return Math.min(30, Math.max(5, Math.round(goal / 7)))
+  })
   const [sessionNotes, setSessionNotes] = useState("")
   const [newBests, setNewBests] = useState<{ avg: boolean; peak: boolean; duration: boolean }>({
     avg: false,

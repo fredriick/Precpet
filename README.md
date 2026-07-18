@@ -38,9 +38,11 @@ Precept is a Progressive Web App (PWA) that uses your device's motion sensors to
 
 - **Framework**: Next.js 15 with App Router
 - **Styling**: Tailwind CSS with custom design tokens
-- **State Management**: React Context + localStorage persistence
+- **State Management**: React Context; localStorage offline cache + Supabase cloud sync
+- **Backend**: Supabase (Auth, Postgres, Row-Level Security) for real accounts and cloud-synced data
+- **Schema/Migrations**: Prisma (typed client + `prisma db push`)
 - **AI**: Claude (via Vercel AI SDK) for skill analysis
-- **Video**: Google Veo API for tutorial generation
+- **Video**: Google Veo API for tutorial generation (graceful placeholder fallback)
 - **PWA**: Web manifest for installability
 
 ## Getting Started
@@ -64,13 +66,19 @@ npm install
 
 3. Set up environment variables:
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Add your API keys:
+Fill in the variables (see below). At minimum you need the three Supabase
+values and at least one AI key:
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GEMINI_API_KEY=your_gemini_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
 ```
+`SUPABASE_DB_URL` is only needed for Prisma (see Backend & Database Setup).
 
 4. Run the development server:
 ```bash
@@ -78,6 +86,32 @@ npm run dev
 ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Backend & Database Setup
+
+Precept needs a Supabase project for authentication, cloud-synced user data,
+and the weekly leaderboard. The schema is defined two ways:
+
+**Option A — Supabase SQL Editor (recommended, works from anywhere over HTTPS):**
+Run these files in order in your Supabase project's SQL Editor
+(Settings → SQL Editor):
+- `supabase/auth.sql` — `profiles` table, new-user trigger, RLS
+- `supabase/schema.sql` — `user_stats`, `practice_sessions`, `user_settings`,
+  `program_progress`, `generated_videos` + RLS
+- `supabase/leaderboard.sql` — `leaderboard_entries` + RLS (already applied if
+  you followed the original setup)
+
+**Option B — Prisma (from a machine with Postgres access, port 5432):**
+```bash
+pnpm prisma generate   # generate the typed client (works offline)
+pnpm prisma db push    # create the app's tables (requires SUPABASE_DB_URL)
+```
+Note: Prisma only creates the app's own tables. The managed `auth.users`
+table, RLS policies, and the new-user trigger are still owned by the
+`supabase/*.sql` files — run those once even if you use Prisma.
+
+> The build/CI sandbox firewalls Postgres port 5432, so `prisma db push`
+> cannot run there. Use Option A (or run Prisma from your local machine).
 
 ### PWA Installation
 On mobile devices, you can install Precept as a standalone app:
@@ -104,19 +138,29 @@ On mobile devices, you can install Precept as a standalone app:
 │   ├── motion-indicator.tsx    # Fluidity visualization
 │   ├── onboarding.tsx          # New user onboarding
 │   └── ...
-├── contexts/
-│   └── app-context.tsx         # Global state management
-├── hooks/
-│   ├── use-motion-sensor.ts    # DeviceMotion API hook
-│   └── use-video-generation.ts # Veo video hook
-├── lib/
-│   ├── demo-data.ts            # Demo/seed data
-│   ├── skills-database.ts      # Soccer skills catalog
-│   ├── storage.ts              # localStorage utilities
-│   └── types.ts                # TypeScript definitions
-└── public/
-    └── manifest.json           # PWA manifest
-```
+ ├── contexts/
+ │   ├── app-context.tsx         # Global state (hydrates from cloud, writes through)
+ │   └── auth-context.tsx        # Supabase auth state
+ ├── hooks/
+ │   ├── use-motion-sensor.ts    # DeviceMotion API hook
+ │   └── use-video-generation.ts # Veo video hook (+ demo fallback)
+ ├── lib/
+ │   ├── supabase-browser.ts     # Anon Supabase client (browser)
+ │   ├── supabase-server.ts      # Service-role client (server)
+ │   ├── cloud-sync.ts           # Load/save user data to Supabase
+ │   ├── leaderboard.ts          # Leaderboard submit/fetch
+ │   ├── leaderboard-rank.ts     # Pure ranking helper
+ │   ├── prisma.ts               # Prisma client singleton (scripts only)
+ │   ├── skills-database.ts      # Soccer skills catalog
+ │   ├── storage.ts              # localStorage utilities (offline cache)
+ │   └── types.ts                # TypeScript definitions
+ ├── app/api/leaderboard/        # GET/POST weekly leaderboard
+ ├── supabase/                   # SQL: auth.sql, schema.sql, leaderboard.sql
+ ├── prisma/                     # Prisma schema + generated client
+ └── public/
+     ├── manifest.json           # PWA manifest
+     └── placeholder-videos/     # Demo video fallback asset
+ ```
 
 ## Key Components
 
@@ -139,11 +183,15 @@ Each skill includes:
 - Visual script for AI video generation
 
 ### State Persistence
-All user data is persisted to localStorage:
-- User statistics and game performance
-- Practice session history
-- Generated video cache
-- User preferences and settings
+User data is the source of truth in Supabase (Postgres) and synced per
+`auth.uid()` via `lib/cloud-sync.ts`:
+- User statistics, game performance, practice sessions, settings, program
+  progress, bookmarked/learned skills, achievements
+- Generated video URLs (cached per user + skill)
+- Weekly leaderboard entries (service-role write, anonymous read)
+
+A localStorage copy is kept as an offline cache so the app stays usable
+without a network connection; cloud state is re-hydrated on login.
 
 ## API Routes
 
@@ -175,10 +223,12 @@ Polls for video generation status.
 
 ## Demo Mode
 
-The app works without API keys in demo mode:
-- Skill recommendations use a fallback algorithm
-- Video generation returns placeholder after simulated delay
-- All other features work with localStorage persistence
+The app is fully functional with a real Supabase backend — no simulated or
+hardcoded data. Without API keys it degrades gracefully:
+- Skill recommendations use a built-in fallback algorithm (no Claude key)
+- Video generation returns a bundled placeholder clip with a "Demo video" badge
+  (no Veo key) instead of an AI-generated tutorial
+- All other features (auth, cloud sync, leaderboard, progress) work unchanged
 
 ## Contributing
 

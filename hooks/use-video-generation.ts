@@ -9,6 +9,7 @@ interface VideoGenerationState {
   videoUrl: string | null
   error: string | null
   progress: "idle" | "starting" | "generating" | "ready" | "error"
+  isDemo?: boolean
 }
 
 export function useVideoGeneration(initialSkillId?: string) {
@@ -17,6 +18,7 @@ export function useVideoGeneration(initialSkillId?: string) {
     videoUrl: null,
     error: null,
     progress: "idle",
+    isDemo: false,
   })
 
   const pollingRef = useRef<AbortController | null>(null)
@@ -91,13 +93,13 @@ export function useVideoGeneration(initialSkillId?: string) {
 
       // If mock mode, return immediately
       if (data.status === "mock") {
-        saveGeneratedVideo(skillId, data.videoUrl)
         if (mountedRef.current) {
           setState({
             isGenerating: false,
             videoUrl: data.videoUrl,
             error: null,
             progress: "ready",
+            isDemo: !!data.demo,
           })
         }
         return data.videoUrl
@@ -180,6 +182,7 @@ export function useVideoGeneration(initialSkillId?: string) {
       videoUrl: null,
       error: null,
       progress: "idle",
+      isDemo: false,
     })
   }, [])
 

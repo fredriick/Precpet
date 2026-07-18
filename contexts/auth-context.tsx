@@ -1,12 +1,13 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
-import { exportUserData } from "@/lib/storage"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
+import type { Session, User } from "@supabase/supabase-js"
 
 const AUTH_KEY = "precept_auth_user"
 
 export interface AuthUser {
+  id: string
   email: string
   name: string
   createdAt: string
@@ -15,39 +16,32 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  register: (name: string, email: string, password: string) => Promise<boolean>
-  logout: () => void
+  login: (email: string, password: string) => Promise<{ error: string | null }>
+  register: (name: string, email: string, password: string) => Promise<{ error: string | null }>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null
+function toAuthUser(user: User, profileName?: string): AuthUser {
+  const metaName = (user.user_metadata?.name as string) || profileName || ""
+  const email = user.email || ""
+  return {
+    id: user.id,
+    email,
+    name: metaName || email.split("@")[0] || "Athlete",
+    createdAt: user.created_at || new Date().toISOString(),
+  }
+}
+
+async function fetchProfileName(userId: string): Promise<string | undefined> {
   try {
-    const raw = localStorage.getItem(AUTH_KEY)
-    return raw ? JSON.parse(raw) : null
+    const supabase = getSupabaseBrowser()
+    const { data } = await supabase.from("profiles").select("name").eq("id", userId).single()
+    return data?.name
   } catch {
-    return null
+    return undefined
   }
-}
-
-function hashPassword(password: string): string {
-  let hash = 0
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return "h_" + btoa(hash.toString(36))
-}
-
-function setStoredUser(user: AuthUser): void {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user))
-}
-
-function removeStoredUser(): void {
-  localStorage.removeItem(AUTH_KEY)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -55,80 +49,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const stored = getStoredUser()
-    if (stored) {
-      setUser(stored)
-    } else {
-      const guest: AuthUser = {
-        email: `guest_${Date.now()}@local.precept`,
-        name: "Guest",
-        createdAt: new Date().toISOString(),
+    const supabase = getSupabaseBrowser()
+
+    const hydrate = async (session: Session | null) => {
+      if (!session?.user) {
+        setUser(null)
+        setIsLoading(false)
+        return
       }
-      setStoredUser(guest)
-      setUser(guest)
+      const name = await fetchProfileName(session.user.id)
+      setUser(toAuthUser(session.user, name))
+      setIsLoading(false)
     }
-    setIsLoading(false)
+
+    supabase.auth.getSession().then(({ data }) => hydrate(data.session))
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void hydrate(session)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const normalizedEmail = email.trim().toLowerCase()
-    const stored = localStorage.getItem(`precept_cred_${normalizedEmail}`)
-    if (!stored) return false
-    try {
-      const cred = JSON.parse(stored)
-      if (cred.password === hashPassword(password)) {
-        const authUser: AuthUser = { email: normalizedEmail, name: cred.name, createdAt: cred.createdAt }
-        setStoredUser(authUser)
-        setUser(authUser)
-        return true
-      }
-    } catch {
-      return false
-    }
-    return false
+  const login = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabaseBrowser()
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+    if (error) return { error: error.message }
+    return { error: null }
   }, [])
 
-  const register = useCallback(async (name: string, email: string, password: string): Promise<boolean> => {
-    const normalizedEmail = email.trim().toLowerCase()
-    if (localStorage.getItem(`precept_cred_${normalizedEmail}`)) return false
-
-    const createdAt = new Date().toISOString()
-    localStorage.setItem(`precept_cred_${normalizedEmail}`, JSON.stringify({ name, email: normalizedEmail, password: hashPassword(password), createdAt }))
-
-    const authUser: AuthUser = { email: normalizedEmail, name: name.trim(), createdAt }
-    setStoredUser(authUser)
-    setUser(authUser)
-    return true
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    const supabase = getSupabaseBrowser()
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { data: { name: name.trim() } },
+    })
+    if (error) return { error: error.message }
+    if (!data.session) {
+      return { error: "Check your email to confirm your account before signing in." }
+    }
+    return { error: null }
   }, [])
 
-  const logout = useCallback(() => {
-    try {
-      const data = exportUserData()
-      const blob = new Blob([data], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `precept-backup-${new Date().toISOString().split("T")[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch {
-      // Silently fail backup
-    }
-    removeStoredUser()
+  const logout = useCallback(async () => {
+    const supabase = getSupabaseBrowser()
+    await supabase.auth.signOut()
     setUser(null)
+    try {
+      localStorage.removeItem(AUTH_KEY)
+    } catch {
+      // ignore
+    }
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>
   )
-}
-
-export function isGuestUser(user: AuthUser | null): boolean {
-  return !!user && user.email.endsWith("@local.precept")
 }
 
 export function useAuth() {
