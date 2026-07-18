@@ -83,25 +83,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (name: string, email: string, password: string) => {
     const supabase = getSupabaseBrowser()
     const cleanEmail = email.trim().toLowerCase()
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: { data: { name: name.trim() } },
-    })
-    if (error) return { error: error.message }
-    if (data.session) return { error: null }
-    // Some Supabase configurations return the user without a `session` object
-    // on signUp even when email confirmation is disabled. The account is
-    // already active, so sign in directly to obtain a session.
-    if (data.user) {
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+    try {
+      const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
+        options: { data: { name: name.trim() } },
       })
-      if (loginError) return { error: loginError.message }
-      return { error: null }
+      if (error) return { error: error.message }
+      if (data.session) return { error: null }
+      // Some Supabase configurations return the user without a `session` object
+      // on signUp even when email confirmation is disabled. The account is
+      // already active, so sign in directly to obtain a session.
+      if (data.user) {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        })
+        if (loginError) return { error: loginError.message }
+        return { error: null }
+      }
+      return { error: "Check your email to confirm your account before signing in." }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      // eslint-disable-next-line no-console
+      console.error("[auth] signUp failed:", err)
+      return { error: `Could not reach the server (${message}). Check your connection.` }
     }
-    return { error: "Check your email to confirm your account before signing in." }
   }, [])
 
   const logout = useCallback(async () => {
