@@ -90,28 +90,30 @@ npm run dev
 ### Backend & Database Setup
 
 Precept needs a Supabase project for authentication, cloud-synced user data,
-and the weekly leaderboard. The schema is defined two ways:
+and the weekly leaderboard.
 
-**Option A — Supabase SQL Editor (recommended, works from anywhere over HTTPS):**
+**Schema + security are owned entirely by the `supabase/*.sql` files** — they
+create the tables *and* the Row-Level Security policies and the new-user
+trigger in one shot. This is the canonical, required setup step:
+
 Run these files in order in your Supabase project's SQL Editor
-(Settings → SQL Editor):
+(Settings → SQL Editor) — works from anywhere over HTTPS (port 443):
 - `supabase/auth.sql` — `profiles` table, new-user trigger, RLS
 - `supabase/schema.sql` — `user_stats`, `practice_sessions`, `user_settings`,
   `program_progress`, `generated_videos` + RLS
 - `supabase/leaderboard.sql` — `leaderboard_entries` + RLS (already applied if
   you followed the original setup)
 
-**Option B — Prisma (from a machine with Postgres access, port 5432):**
-```bash
-pnpm prisma generate   # generate the typed client (works offline)
-pnpm prisma db push    # create the app's tables (requires SUPABASE_DB_URL)
-```
-Note: Prisma only creates the app's own tables. The managed `auth.users`
-table, RLS policies, and the new-user trigger are still owned by the
-`supabase/*.sql` files — run those once even if you use Prisma.
+> **Prisma is used only as a typed client** (`lib/prisma.ts`), never to
+> provision the database. `prisma db push` cannot model RLS policies, triggers,
+> or the FK to `auth.users`, so running it would create tables with no security
+> layer. Always apply schema changes via the SQL files above, then mirror the
+> structural part into `prisma/schema.prisma` so the typed client stays in sync.
+> `pnpm prisma generate` (offline-safe) regenerates the client.
 
-> The build/CI sandbox firewalls Postgres port 5432, so `prisma db push`
-> cannot run there. Use Option A (or run Prisma from your local machine).
+> The build/CI sandbox firewalls Postgres port 5432, so Prisma push/migrate
+> commands cannot run there regardless — the SQL Editor path is the only one
+> usable from the sandbox.
 
 ### PWA Installation
 On mobile devices, you can install Precept as a standalone app:

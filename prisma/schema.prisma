@@ -1,6 +1,11 @@
 // Prisma schema for Precept (Supabase Postgres).
-// Apply with: pnpm prisma db push   (requires SUPABASE_DB_URL with 5432 access)
-// Or generate a migration: pnpm prisma migrate dev
+//
+// READ-ONLY TYPED MIRROR of supabase/*.sql. This file is used ONLY to generate
+// the typed Prisma Client (pnpm prisma generate). It is NOT used to provision
+// the database — RLS policies, triggers, and the FK to auth.users cannot be
+// modeled here, so `prisma db push` / `prisma migrate` would create tables with
+// NO security layer. Always apply schema changes via the supabase/*.sql files
+// in the Supabase Dashboard SQL Editor, then mirror the structural part here.
 
 generator client {
   provider = "prisma-client-js"

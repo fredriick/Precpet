@@ -10,9 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
-    "db:setup": "prisma db push"
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
