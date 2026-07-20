@@ -31,7 +31,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
 
   // Hook must be called unconditionally, so we pass skill?.id (which might be undefined, handled by hook)
   // Re-checking skill existence here for type safety is fine as notFound() throws
-  const { isGenerating, videoUrl, error, progress, generateVideo } = useVideoGeneration(skill.id)
+  const { isGenerating, videoUrl, error, progress, isDemo, generateVideo } = useVideoGeneration(skill.id)
 
   const isLearned = userStats.skillsLearned.includes(skill.id)
 
@@ -79,7 +79,14 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
         <div className="rounded-2xl bg-card border border-border overflow-hidden">
           <div className="aspect-video bg-secondary flex items-center justify-center relative">
             {videoUrl ? (
-              <video src={videoUrl} controls className="w-full h-full object-cover" autoPlay loop playsInline />
+              <>
+                <video src={videoUrl} controls className="w-full h-full object-cover" autoPlay loop playsInline />
+                {isDemo && (
+                  <span className="absolute top-2 right-2 px-2 py-1 rounded-full bg-amber-500/90 text-black text-[10px] font-semibold uppercase tracking-wide">
+                    Demo video
+                  </span>
+                )}
+              </>
             ) : (
               <div className="text-center p-6">
                 <div

@@ -25,6 +25,7 @@ export function PracticeContent() {
   const selectedSkill = skillId ? getSkillById(skillId) : null
 
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
+  const isMobile = typeof window !== "undefined" && (navigator.maxTouchPoints > 1 || /Mobi|Android|iPhone|iPad|iPod|tablet|PlayBook|Silk/i.test(navigator.userAgent))
   const { addSession, finishSession, settings, sessions } = useApp()
 
   const [practiceState, setPracticeState] = useState<"idle" | "active" | "paused" | "complete">("idle")
@@ -874,6 +875,16 @@ export function PracticeContent() {
                 </p>
               </div>
             )}
+            {isSupported && !isMobile && (
+              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
+                <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-amber-600 text-sm">
+                  Practice requires a mobile device with motion sensors. Open this page on your phone for a real coaching experience.
+                </p>
+              </div>
+            )}
             {permissionStatus === "denied" && (
               <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 flex gap-3 items-start">
                 <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -894,7 +905,7 @@ export function PracticeContent() {
               {practiceState === "idle" && (
                 <Button
                   onClick={startPractice}
-                  disabled={!isSupported || permissionStatus === "denied"}
+                  disabled={!isSupported || !isMobile || permissionStatus === "denied"}
                   className="w-full h-14 text-lg font-bold rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] transition-all"
                 >
                   {currentSkill ? (

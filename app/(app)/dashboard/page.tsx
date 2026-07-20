@@ -477,7 +477,7 @@ export default function HomePage() {
 
         <PracticeHeatmap sessions={sessions} />
 
-        <LeaderboardWidget userMinutes={weekMinutes} userName={user?.name || "You"} />
+        <LeaderboardWidget userMinutes={weekMinutes} userName={user?.name || "You"} sport={preferredSport} />
 
         {hasBests && (
           <div className="rounded-2xl bg-card border border-border p-5">
