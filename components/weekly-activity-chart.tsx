@@ -2,17 +2,27 @@
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import type { PracticeSession } from "@/lib/types"
-import { format, subDays, startOfDay, isSameDay } from "date-fns"
+import { format, startOfDay, isSameDay, addDays } from "date-fns"
 
 interface WeeklyActivityChartProps {
   sessions: PracticeSession[]
 }
 
+function getMonday(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
 export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
   const today = startOfDay(new Date())
+  const monday = getMonday(today)
 
   const days = Array.from({ length: 7 }, (_, i) => {
-    const date = subDays(today, 6 - i)
+    const date = addDays(monday, i)
     const daySessions = sessions.filter((s) => {
       if (!s.endTime) return false
       return isSameDay(startOfDay(new Date(s.endTime)), date)
@@ -27,6 +37,7 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
       day: format(date, "EEE"),
       minutes: totalMinutes,
       fullDate: format(date, "MMM d"),
+      isToday: isSameDay(date, today),
     }
   })
 

@@ -43,24 +43,6 @@ const navItems = [
         ),
     },
     {
-        href: "/skills",
-        label: "Skills",
-        icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-        ),
-    },
-    {
-        href: "/programs",
-        label: "Programs",
-        icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-        ),
-    },
-    {
         href: "/practice",
         label: "Practice",
         icon: (
@@ -190,14 +172,40 @@ export function Sidebar() {
             </nav>
 
             {!collapsed && (
-                <div className="mt-auto px-4 py-4 rounded-2xl bg-sidebar-accent/50 border border-sidebar-border">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Weekly Goal</p>
-                    <div className="w-full bg-secondary rounded-full h-2 mb-2 overflow-hidden">
-                        <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${goalProgress}%` }} />
+                <div className="mt-auto space-y-3">
+                    <div className="px-4 py-4 rounded-2xl bg-sidebar-accent/50 border border-sidebar-border">
+                        <p className="text-xs text-muted-foreground font-medium mb-1">Weekly Goal</p>
+                        <div className="w-full bg-secondary rounded-full h-2 mb-2 overflow-hidden">
+                            <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${goalProgress}%` }} />
+                        </div>
+                        <p className="text-xs text-right text-sidebar-foreground">{daysThisWeek}/{weeklyGoal} days</p>
                     </div>
-                    <p className="text-xs text-right text-sidebar-foreground">{daysThisWeek}/{weeklyGoal} days</p>
+                    <ThemeToggle />
                 </div>
             )}
         </aside>
+    )
+}
+
+function ThemeToggle() {
+    const { settings, updateSettings } = useApp()
+    const isDark = settings.theme === "dark"
+
+    return (
+        <button
+            onClick={() => updateSettings({ theme: isDark ? "light" : "dark" })}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all font-medium"
+        >
+            {isDark ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+            ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+            )}
+            <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+        </button>
     )
 }

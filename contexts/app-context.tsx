@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
-import type { UserStats, PracticeSession, ProgramProgress } from "@/lib/types"
+import type { UserStats, PracticeSession, ProgramProgress, Sport } from "@/lib/types"
 import type { UserSettings } from "@/lib/storage"
 import {
   getUserStats,
@@ -36,6 +36,8 @@ import {
   saveCloudVideo,
 } from "@/lib/cloud-sync"
 
+export const SESSION_LIMIT = 50
+
 const defaultUserStats: UserStats = {
   matchesPlayed: 0,
   ballLossesUnderPressure: 0,
@@ -50,6 +52,7 @@ const defaultUserStats: UserStats = {
   currentStreak: 0,
   longestStreak: 0,
   lastPracticeDate: null,
+  isPro: false,
 }
 
 const defaultSettings: UserSettings = {
@@ -58,6 +61,8 @@ const defaultSettings: UserSettings = {
   practiceReminders: true,
   preferredDifficulty: "all",
   preferredSport: "soccer",
+  preferredSports: ["soccer"],
+  activeSport: "soccer",
   theme: "dark",
   weeklyGoalMinutes: 60,
 }
@@ -68,6 +73,8 @@ interface AppContextValue {
   settings: UserSettings
   isOnboarded: boolean | null
   isLoading: boolean
+  activeSport: Sport
+  setActiveSport: (sport: Sport) => void
   updateStats: (updates: Partial<UserStats>) => void
   addSession: (session: PracticeSession) => void
   finishSession: (session: PracticeSession, fluidityScores: number[], notes?: string) => void
@@ -78,6 +85,7 @@ interface AppContextValue {
   toggleBookmark: (skillId: string) => void
   unlockAchievement: (achievementId: string) => void
   updateStreak: () => void
+  atSessionLimit: boolean
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -87,6 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userStats, setUserStats] = useState<UserStats>(defaultUserStats)
   const [sessions, setSessions] = useState<PracticeSession[]>([])
   const [settings, setSettings] = useState<UserSettings>(defaultSettings)
+  const [activeSport, setActiveSportState] = useState<Sport>("soccer")
   const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -97,8 +106,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUserStats(getUserStats())
     setSessions(getPracticeSessions())
-    setSettings(getUserSettings())
-    document.documentElement.className = getUserSettings().theme
+    const loadedSettings = getUserSettings()
+    setSettings(loadedSettings)
+    setActiveSportState(loadedSettings.activeSport || loadedSettings.preferredSports?.[0] || "soccer")
+    document.documentElement.className = loadedSettings.theme
     setIsOnboarded(hasCompletedOnboarding())
     setIsLoading(false)
     achievementsRef.current = [...getUserStats().achievements]
@@ -117,6 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUserStats(snapshot.userStats)
         setSessions(snapshot.sessions)
         setSettings(snapshot.settings)
+        setActiveSportState(snapshot.settings.activeSport || snapshot.settings.preferredSports?.[0] || "soccer")
         document.documentElement.className = snapshot.settings.theme
         achievementsRef.current = [...snapshot.userStats.achievements]
       })
@@ -150,6 +162,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [user],
   )
 
+  const setActiveSport = useCallback(
+    (sport: Sport) => {
+      setActiveSportState(sport)
+      setSettings((prev) => {
+        const updated = { ...prev, activeSport: sport }
+        syncSettings(updated)
+        return updated
+      })
+    },
+    [syncSettings],
+  )
+
   const updateStats = useCallback(
     (updates: Partial<UserStats>) => {
       setUserStats((prev) => {
@@ -160,6 +184,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     [syncStats],
   )
+
+  const atSessionLimit = sessions.length >= SESSION_LIMIT
 
   const addSession = useCallback(
     (session: PracticeSession) => {
@@ -270,6 +296,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         settings,
         isOnboarded,
         isLoading,
+        activeSport,
+        setActiveSport,
         updateStats,
         addSession,
         finishSession,
@@ -280,6 +308,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toggleBookmark,
         unlockAchievement,
         updateStreak,
+        atSessionLimit,
       }}
     >
       {children}

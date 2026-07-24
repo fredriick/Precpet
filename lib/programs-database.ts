@@ -216,3 +216,8 @@ export function getProgramsByCategory(category: Program["category"]): Program[] 
 export function getProgramsBySport(sport: Program["sport"]): Program[] {
   return trainingPrograms.filter((p) => p.sport === sport)
 }
+
+export function getProgramsBySports(sports: Program["sport"][]): Program[] {
+  if (!sports || sports.length === 0) return []
+  return trainingPrograms.filter((p) => sports.includes(p.sport))
+}

@@ -29,7 +29,7 @@ const sportIcons: Record<Sport, React.ReactNode> = {
 }
 
 export default function SettingsPage() {
-  const { settings, updateSettings } = useApp()
+  const { settings, updateSettings, activeSport, setActiveSport } = useApp()
   const router = useRouter()
 
   const difficulties = ["all", "beginner", "intermediate", "advanced"] as const
@@ -57,26 +57,61 @@ export default function SettingsPage() {
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-6">
         {/* Sport Preference */}
         <section className="rounded-2xl bg-card border border-border p-5">
-          <h2 className="font-semibold mb-1">Preferred Sport</h2>
-          <p className="text-xs text-muted-foreground mb-4">Your default sport for practice and skills</p>
+          <h2 className="font-semibold mb-1">Preferred Sports</h2>
+          <p className="text-xs text-muted-foreground mb-4">Select the sports you train</p>
           <div className="flex gap-2">
-            {sports.map((sport) => (
-              <button
-                key={sport}
-                onClick={() => updateSettings({ preferredSport: sport })}
-                className={cn(
-                  "flex-1 py-3 rounded-xl text-sm font-medium transition-all border",
-                  settings.preferredSport === sport
-                    ? "bg-primary/20 border-primary text-primary"
-                    : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}
-              >
-                <span className="text-lg block mb-1">{sportIcons[sport]}</span>
-                {sport.charAt(0).toUpperCase() + sport.slice(1)}
-              </button>
-            ))}
+            {sports.map((sport) => {
+              const isSelected = settings.preferredSports.includes(sport)
+              return (
+                <button
+                  key={sport}
+                  onClick={() => {
+                    const current = settings.preferredSports
+                    const next = isSelected
+                      ? current.filter((s) => s !== sport)
+                      : [...current, sport]
+                    if (next.length === 0) return // Prevent deselecting all
+                    updateSettings({ preferredSports: next, preferredSport: next[0] })
+                  }}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-sm font-medium transition-all border",
+                    isSelected
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  <span className="text-lg block mb-1">{sportIcons[sport]}</span>
+                  {sport.charAt(0).toUpperCase() + sport.slice(1)}
+                </button>
+              )
+            })}
           </div>
         </section>
+
+        {/* Active Sport */}
+        {settings.preferredSports.length > 1 && (
+          <section className="rounded-2xl bg-card border border-border p-5">
+            <h2 className="font-semibold mb-1">Active Sport</h2>
+            <p className="text-xs text-muted-foreground mb-4">Currently viewing content for</p>
+            <div className="flex gap-2">
+              {settings.preferredSports.map((sport) => (
+                <button
+                  key={sport}
+                  onClick={() => setActiveSport(sport)}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-sm font-medium transition-all border",
+                    activeSport === sport
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  <span className="text-lg block mb-1">{sportIcons[sport]}</span>
+                  {sport.charAt(0).toUpperCase() + sport.slice(1)}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Difficulty Preference */}
         <section className="rounded-2xl bg-card border border-border p-5">
@@ -254,7 +289,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">v1.0.0 · 32 skills · 13 programs</p>
           <div className="flex gap-4 justify-center mt-3 text-xs text-muted-foreground">
             <Link href="/profile" className="underline hover:text-foreground">Profile</Link>
-            <Link href="/programs" className="underline hover:text-foreground">Programs</Link>
+            <Link href="/practice" className="underline hover:text-foreground">Practice</Link>
           </div>
         </section>
       </main>

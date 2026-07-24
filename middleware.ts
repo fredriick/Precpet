@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://generativelanguage.googleapis.com https://*.supabase.co",
     "connect-src 'self' https://generativelanguage.googleapis.com https://*.supabase.co wss://*.supabase.co",
-    "media-src 'self' blob:",
+    "media-src 'self' blob: https://*.supabase.co",
     "frame-ancestors 'none'",
     "base-uri 'self'",
   ].join("; ")
@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), accelerometer=(self), gyroscope=(self)",
+    "camera=(self), microphone=(self), geolocation=(), accelerometer=(self), gyroscope=(self)",
   )
 
   return response

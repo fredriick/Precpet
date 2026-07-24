@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform } from "framer-motion"
 import { PreceptLogo } from "@/components/precept-logo"
 import { HeroScene } from "@/components/hero-scene"
 import { ScrollReveal, StaggerContainer, StaggerItem, FloatIn } from "@/components/scroll-animations"
+import { useAuth } from "@/contexts/auth-context"
 
 const features = [
   {
@@ -72,6 +73,7 @@ function AnimatedStat({ value, suffix, label, display }: { value: number; suffix
 }
 
 export default function LandingPage() {
+  const { user } = useAuth()
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
   const { scrollYProgress } = useScroll()
@@ -123,15 +125,26 @@ export default function LandingPage() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <Link href="/login" className="px-5 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors">
-              Sign In
-            </Link>
-            <Link href="/register" className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl opacity-60 group-hover:opacity-100 blur transition duration-300" />
-              <div className="relative px-5 py-2 bg-[#0a0a0f] rounded-xl text-sm font-semibold text-white group-hover:bg-transparent transition-colors">
-                Get Started
-              </div>
-            </Link>
+            {user ? (
+              <Link href="/dashboard" className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl opacity-60 group-hover:opacity-100 blur transition duration-300" />
+                <div className="relative px-5 py-2 bg-[#0a0a0f] rounded-xl text-sm font-semibold text-white group-hover:bg-transparent transition-colors">
+                  Dashboard
+                </div>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="px-5 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors">
+                  Sign In
+                </Link>
+                <Link href="/register" className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl opacity-60 group-hover:opacity-100 blur transition duration-300" />
+                  <div className="relative px-5 py-2 bg-[#0a0a0f] rounded-xl text-sm font-semibold text-white group-hover:bg-transparent transition-colors">
+                    Get Started
+                  </div>
+                </Link>
+              </>
+            )}
           </motion.div>
         </div>
       </motion.nav>
@@ -272,18 +285,29 @@ export default function LandingPage() {
             </motion.p>
 
             <div className="flex flex-col sm:flex-row items-start gap-4 mb-20">
-              <Link href="/register" className="relative group w-full sm:w-auto">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 rounded-xl opacity-70 group-hover:opacity-100 blur-lg transition duration-300" />
-                <div className="relative px-10 py-4 bg-[#0a0a0f] rounded-xl text-base font-semibold group-hover:bg-transparent transition-colors">
-                  Start Free Trial
-                </div>
-              </Link>
-              <Link
-                href="/login"
-                className="hidden sm:block w-full sm:w-auto px-10 py-4 text-base font-medium text-white bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.2] hover:border-white/[0.3] rounded-xl transition-all"
-              >
-                Sign In
-              </Link>
+              {user ? (
+                <Link href="/dashboard" className="relative group w-full sm:w-auto">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 rounded-xl opacity-70 group-hover:opacity-100 blur-lg transition duration-300" />
+                  <div className="relative px-10 py-4 bg-[#0a0a0f] rounded-xl text-base font-semibold group-hover:bg-transparent transition-colors">
+                    Go to Dashboard
+                  </div>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/register" className="relative group w-full sm:w-auto">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 rounded-xl opacity-70 group-hover:opacity-100 blur-lg transition duration-300" />
+                    <div className="relative px-10 py-4 bg-[#0a0a0f] rounded-xl text-base font-semibold group-hover:bg-transparent transition-colors">
+                      Start Free Trial
+                    </div>
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="hidden sm:block w-full sm:w-auto px-10 py-4 text-base font-medium text-white bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.2] hover:border-white/[0.3] rounded-xl transition-all"
+                  >
+                    Sign In
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 w-full">
@@ -346,20 +370,22 @@ export default function LandingPage() {
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
               <div className="relative">
                 <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-                  Ready to{" "}
-                  <span className="bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent">
-                    transform
-                  </span>{" "}
-                  your game?
+                  {user ? (
+                    <>Welcome back to <span className="bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent">Precept</span></>
+                  ) : (
+                    <>Ready to <span className="bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent">transform</span> your game?</>
+                  )}
                 </h2>
                 <p className="text-white/40 max-w-lg mx-auto mb-10">
-                  Join thousands of athletes already training smarter with Precept.
+                  {user
+                    ? "Pick up where you left off and keep improving."
+                    : "Join thousands of athletes already training smarter with Precept."}
                 </p>
                 <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                  <Link href="/register" className="relative group inline-block">
+                  <Link href={user ? "/dashboard" : "/register"} className="relative group inline-block">
                     <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 rounded-xl opacity-70 group-hover:opacity-100 blur-lg transition duration-300" />
                     <div className="relative px-10 py-4 bg-[#0a0a0f] rounded-xl text-base font-semibold group-hover:bg-transparent transition-colors">
-                      Get Started Free
+                      {user ? "Go to Dashboard" : "Get Started Free"}
                     </div>
                   </Link>
                 </motion.div>

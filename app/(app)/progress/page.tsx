@@ -7,6 +7,7 @@ import { SessionHistoryList } from "@/components/session-history-list"
 import { StreakWidget } from "@/components/streak-widget"
 import { FluidityTrendChart } from "@/components/fluidity-trend-chart"
 import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/contexts/auth-context"
 import { achievements } from "@/lib/achievements-database"
 import { allSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
@@ -22,11 +23,12 @@ const sportLabels: Record<Sport, string> = {
 }
 
 export default function ProgressPage() {
-  const { userStats, sessions, settings } = useApp()
+  const { userStats, sessions, settings, activeSport } = useApp()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>("stats")
   const [historyFilter, setHistoryFilter] = useState<SportFilter>("all")
 
-  const preferredSport = settings.preferredSport
+  const preferredSport = activeSport
 
   const bestFluidity = useMemo(() => {
     let best = 0
@@ -101,7 +103,7 @@ export default function ProgressPage() {
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto min-h-[60vh]">
         {activeTab === "stats" && (
           <div className="space-y-6 animate-slide-up">
-            <StreakWidget />
+            <StreakWidget sessions={sessions} registeredAt={user?.createdAt} />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">

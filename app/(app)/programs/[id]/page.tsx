@@ -26,7 +26,7 @@ export default function ProgramDetailPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <p className="text-muted-foreground">Program not found</p>
-        <Link href="/programs" className="text-primary underline text-sm">Back to programs</Link>
+        <Link href="/practice" className="text-primary underline text-sm">Back to training</Link>
       </div>
     )
   }
@@ -61,7 +61,7 @@ export default function ProgramDetailPage() {
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="px-4 py-3 max-w-lg md:max-w-5xl mx-auto flex items-center gap-3">
-          <Link href="/programs" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/practice" className="text-muted-foreground hover:text-foreground transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>

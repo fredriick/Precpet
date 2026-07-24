@@ -39,6 +39,20 @@ export interface UserStats {
   currentStreak: number
   longestStreak: number
   lastPracticeDate: string | null
+  isPro: boolean
+}
+
+export interface VideoAnalysisResult {
+  passAccuracy: number
+  successfulDribbles: number
+  shotsOnTarget: number
+  ballControlQuality: number
+  techniqueForm: number
+  confidence: number
+  summary: string
+  analyzedAt: string
+  videoUrl?: string
+  overridden?: boolean
 }
 
 export interface SkillRecommendation {
@@ -57,6 +71,8 @@ export interface PracticeSession {
   fluidityScores: number[]
   completed: boolean
   notes?: string
+  videoUrl?: string
+  analysisResult?: VideoAnalysisResult
 }
 
 export interface ProgramStep {

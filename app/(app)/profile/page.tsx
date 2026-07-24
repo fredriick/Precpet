@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { AchievementBadge } from "@/components/achievement-badge"
-import { useApp } from "@/contexts/app-context"
+import { useApp, SESSION_LIMIT } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { allSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
@@ -13,21 +13,8 @@ import { cn } from "@/lib/utils"
 import { LogoutButton } from "@/components/logout-button"
 
 export default function ProfilePage() {
-  const { userStats, settings, updateStats, updateSettings, sessions } = useApp()
+  const { userStats, settings, updateSettings, sessions, atSessionLimit } = useApp()
   const { user } = useAuth()
-  const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState({
-    matchesPlayed: userStats.matchesPlayed,
-    passAccuracy: userStats.passAccuracy,
-    successfulDribbles: userStats.successfulDribbles,
-    ballLossesUnderPressure: userStats.ballLossesUnderPressure,
-    shotsOnTarget: userStats.shotsOnTarget,
-  })
-
-  const handleSaveStats = () => {
-    updateStats(editForm)
-    setIsEditing(false)
-  }
 
   const totalSkills = allSkills.length
   const learnedSkills = userStats.skillsLearned.length
@@ -180,108 +167,29 @@ export default function ProfilePage() {
 
         {/* Game Stats */}
         <div className="rounded-2xl bg-card border border-border p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 mb-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Game Stats</h3>
-            <button
-              onClick={() => {
-                if (isEditing) {
-                  handleSaveStats()
-                } else {
-                  setEditForm({
-                    matchesPlayed: userStats.matchesPlayed,
-                    passAccuracy: userStats.passAccuracy,
-                    successfulDribbles: userStats.successfulDribbles,
-                    ballLossesUnderPressure: userStats.ballLossesUnderPressure,
-                    shotsOnTarget: userStats.shotsOnTarget,
-                  })
-                  setIsEditing(true)
-                }
-              }}
-              className="text-sm text-primary font-medium"
-            >
-              {isEditing ? "Save" : "Edit"}
-            </button>
+            <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI Analyzed</span>
           </div>
 
-          {isEditing ? (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Matches Played</label>
-                <input
-                  type="number"
-                  value={editForm.matchesPlayed}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, matchesPlayed: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border focus:border-primary outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Pass Accuracy (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={editForm.passAccuracy}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, passAccuracy: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border focus:border-primary outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Successful Dribbles</label>
-                <input
-                  type="number"
-                  value={editForm.successfulDribbles}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, successfulDribbles: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border focus:border-primary outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Ball Losses Under Pressure</label>
-                <input
-                  type="number"
-                  value={editForm.ballLossesUnderPressure}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, ballLossesUnderPressure: Number(e.target.value) }))
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border focus:border-primary outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Shots on Target</label>
-                <input
-                  type="number"
-                  value={editForm.shotsOnTarget}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, shotsOnTarget: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border focus:border-primary outline-none"
-                />
-              </div>
-              <Button variant="outline" onClick={() => setIsEditing(false)} className="w-full">
-                Cancel
-              </Button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <span className="text-muted-foreground">Pass Accuracy</span>
+              <span className="font-semibold">{userStats.passAccuracy}%</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">Matches Played</span>
-                <span className="font-semibold">{userStats.matchesPlayed}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">Pass Accuracy</span>
-                <span className="font-semibold">{userStats.passAccuracy}%</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">Successful Dribbles</span>
-                <span className="font-semibold text-primary">{userStats.successfulDribbles}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">Ball Losses Under Pressure</span>
-                <span className="font-semibold text-amber-400">{userStats.ballLossesUnderPressure}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">Shots on Target</span>
-                <span className="font-semibold">{userStats.shotsOnTarget}</span>
-              </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-muted-foreground">Successful Dribbles</span>
+              <span className="font-semibold text-primary">{userStats.successfulDribbles}</span>
             </div>
-          )}
+            <div className="flex items-center justify-between py-2">
+              <span className="text-muted-foreground">Shots on Target</span>
+              <span className="font-semibold">{userStats.shotsOnTarget}</span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-muted-foreground mt-4 text-center">
+            Values are automatically updated from AI video analysis. Record a session to improve your stats.
+          </p>
         </div>
 
         {/* Settings */}
@@ -389,23 +297,35 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Storage */}
-        <div className="rounded-2xl bg-card border border-border p-6">
+        {/* Cloud Storage */}
+        <div className={cn("rounded-2xl bg-card border p-6", atSessionLimit ? "border-violet-500/30" : "border-border")}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Storage</h3>
-            <span className="text-xs text-muted-foreground">{sessions.length} sessions</span>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Cloud Storage</h3>
+            <span className={cn("text-xs font-medium", atSessionLimit ? "text-violet-500" : "text-muted-foreground")}>
+              {sessions.length} / {SESSION_LIMIT} sessions
+            </span>
           </div>
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
-              style={{ width: `${Math.min(100, (sessions.length / 50) * 100)}%` }}
+              className={cn(
+                "h-full rounded-full transition-all",
+                atSessionLimit
+                  ? "bg-gradient-to-r from-violet-500 to-violet-400"
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-400",
+              )}
+              style={{ width: `${Math.min(100, (sessions.length / SESSION_LIMIT) * 100)}%` }}
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {sessions.length < 50
-              ? `${50 - sessions.length} session slots remaining`
-              : "Session limit reached. Old sessions will be archived."}
+            {atSessionLimit
+              ? "Session limit reached. Upgrade to Precept Pro for unlimited practice."
+              : `${SESSION_LIMIT - sessions.length} sessions remaining on the free plan`}
           </p>
+          {atSessionLimit && (
+            <div className="mt-3 rounded-xl bg-violet-500/10 border border-violet-500/20 p-3">
+              <p className="text-violet-600 text-xs font-medium">Upgrade to Pro for unlimited sessions, advanced analytics, and priority support.</p>
+            </div>
+          )}
         </div>
 
         {/* Sign Out */}

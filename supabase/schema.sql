@@ -18,6 +18,7 @@ create table if not exists public.user_stats (
   current_streak integer not null default 0,
   longest_streak integer not null default 0,
   last_practice_date text,
+  is_pro boolean not null default false,
   updated_at timestamptz not null default now()
 );
 
@@ -32,6 +33,8 @@ create table if not exists public.practice_sessions (
   fluidity_scores integer[] not null default '{}',
   completed boolean not null default false,
   notes text,
+  video_url text,
+  analysis_result jsonb,
   primary key (user_id, id)
 );
 
@@ -46,6 +49,8 @@ create table if not exists public.user_settings (
   practice_reminders boolean not null default true,
   preferred_difficulty text not null default 'all',
   preferred_sport text not null default 'soccer',
+  preferred_sports jsonb not null default '["soccer"]'::jsonb,
+  active_sport text not null default 'soccer',
   theme text not null default 'dark',
   weekly_goal_minutes integer not null default 60,
   updated_at timestamptz not null default now()
@@ -71,12 +76,34 @@ create table if not exists public.generated_videos (
   primary key (user_id, skill_id)
 );
 
+-- 6. Video analyses (one row per uploaded video analysis)
+create table if not exists public.video_analyses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  session_id text,
+  skill_id text not null,
+  sport text not null,
+  video_url text not null,
+  pass_accuracy integer,
+  successful_dribbles integer,
+  shots_on_target integer,
+  ball_control_quality integer,
+  technique_form integer,
+  confidence real,
+  raw_analysis jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists video_analyses_user_idx
+  on public.video_analyses (user_id, created_at desc);
+
 -- Row Level Security: every table is scoped to the owner.
 alter table public.user_stats enable row level security;
 alter table public.practice_sessions enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.program_progress enable row level security;
 alter table public.generated_videos enable row level security;
+alter table public.video_analyses enable row level security;
 
 -- Helper: owner check per table
 drop policy if exists "user_stats owner" on public.user_stats;
@@ -101,5 +128,10 @@ create policy "program_progress owner" on public.program_progress
 
 drop policy if exists "generated_videos owner" on public.generated_videos;
 create policy "generated_videos owner" on public.generated_videos
+  for all to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "video_analyses owner" on public.video_analyses;
+create policy "video_analyses owner" on public.video_analyses
   for all to authenticated
   using (auth.uid() = user_id) with check (auth.uid() = user_id);

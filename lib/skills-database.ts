@@ -531,6 +531,11 @@ export function getSkillsBySport(sport: Sport): Skill[] {
   return allSkills.filter((skill) => skill.sport === sport)
 }
 
+export function getSkillsBySports(sports: Sport[]): Skill[] {
+  if (!sports || sports.length === 0) return []
+  return allSkills.filter((skill) => sports.includes(skill.sport))
+}
+
 export function getSkillsByCategory(category: Skill["category"]): Skill[] {
   return allSkills.filter((skill) => skill.category === category)
 }

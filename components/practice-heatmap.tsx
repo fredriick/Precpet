@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import { startOfDay, subDays } from "date-fns"
+import { useMemo, useState } from "react"
+import { startOfDay, subDays, format } from "date-fns"
 import type { PracticeSession } from "@/lib/types"
 
 const WEEKS = 12
@@ -14,6 +14,8 @@ function levelColor(level: number): string {
 }
 
 export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
+  const [hovered, setHovered] = useState<{ date: Date; count: number; x: number; y: number } | null>(null)
+
   const { cells, maxCount } = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const s of sessions) {
@@ -62,21 +64,52 @@ export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Practice Activity</h3>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+      <div className="relative flex gap-1 overflow-x-auto scrollbar-hide">
         {columns.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
-            {week.map((cell) => (
-              <div
-                key={cell.date.getTime()}
-                title={`${cell.date.toLocaleDateString()} — ${cell.count} session${cell.count === 1 ? "" : "s"}`}
-                className="w-3.5 h-3.5 rounded-sm flex-shrink-0"
-                style={{
-                  backgroundColor: cell.date.getTime() > today ? "transparent" : levelColor(getLevel(cell.count)),
-                }}
-              />
-            ))}
+            {week.map((cell) => {
+              const isFuture = cell.date.getTime() > today
+              return (
+                <div
+                  key={cell.date.getTime()}
+                  className="w-3.5 h-3.5 rounded-sm flex-shrink-0 cursor-default"
+                  style={{
+                    backgroundColor: isFuture ? "transparent" : levelColor(getLevel(cell.count)),
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isFuture) return
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    setHovered({
+                      date: cell.date,
+                      count: cell.count,
+                      x: rect.left + rect.width / 2,
+                      y: rect.top,
+                    })
+                  }}
+                  onMouseLeave={() => setHovered(null)}
+                />
+              )
+            })}
           </div>
         ))}
+
+        {hovered && (
+          <div
+            className="fixed z-50 pointer-events-none"
+            style={{
+              left: hovered.x,
+              top: hovered.y - 8,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
+              <p className="font-medium text-foreground">{format(hovered.date, "MMM d, yyyy")}</p>
+              <p className="text-primary font-mono">
+                {hovered.count} session{hovered.count === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-1.5 mt-3 text-xs text-muted-foreground">

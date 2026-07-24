@@ -7,12 +7,15 @@ import { MotionIndicator } from "@/components/motion-indicator"
 import { Button } from "@/components/ui/button"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/contexts/auth-context"
 import { getSkillById, allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { celebratoryFeedback } from "@/lib/feedback"
 import { markProgramStepComplete, getProgramProgress, initProgramProgress, savePracticeSession } from "@/lib/storage"
 import { trainingPrograms } from "@/lib/programs-database"
+import { VideoRecorder } from "@/components/video-recorder"
+import { useVideoAnalysis } from "@/hooks/use-video-analysis"
 import { cn } from "@/lib/utils"
-import type { Skill, PracticeSession, Sport } from "@/lib/types"
+import type { Skill, PracticeSession } from "@/lib/types"
 
 const REST_SECONDS = 15
 
@@ -26,18 +29,14 @@ export function PracticeContent() {
 
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
   const isMobile = typeof window !== "undefined" && (navigator.maxTouchPoints > 1 || /Mobi|Android|iPhone|iPad|iPod|tablet|PlayBook|Silk/i.test(navigator.userAgent))
-  const { addSession, finishSession, settings, sessions } = useApp()
+  const { addSession, finishSession, settings, sessions, atSessionLimit, userStats, activeSport } = useApp()
 
   const [practiceState, setPracticeState] = useState<"idle" | "active" | "paused" | "complete">("idle")
   const [sessionTime, setSessionTime] = useState(0)
   const [fluidityHistory, setFluidityHistory] = useState<number[]>([])
   const [currentSkill, setCurrentSkill] = useState<Skill | null>(selectedSkill ?? null)
-  const [selectedSport, setSelectedSport] = useState<Sport>(settings.preferredSport)
-
-  useEffect(() => {
-    setSelectedSport(settings.preferredSport)
-  }, [settings.preferredSport])
   const [showSkillPicker, setShowSkillPicker] = useState(!selectedSkill)
+  const [fullSkillList, setFullSkillList] = useState(false)
   const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null)
   const [completedSession, setCompletedSession] = useState<PracticeSession | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -53,6 +52,9 @@ export function PracticeContent() {
     peak: false,
     duration: false,
   })
+  const [showVideoRecorder, setShowVideoRecorder] = useState(false)
+  const { user: authUser } = useAuth()
+  const videoAnalysis = useVideoAnalysis(authUser?.id ?? null)
 
   // Program drill state
   const program = programId ? trainingPrograms.find((p) => p.id === programId) : null
@@ -199,7 +201,7 @@ export function PracticeContent() {
   }
 
   // Filter skills based on user preference
-  const sportFiltered = getSkillsBySport(selectedSport)
+  const sportFiltered = getSkillsBySport(activeSport)
   const filteredSkills =
     settings.preferredDifficulty === "all"
       ? sportFiltered
@@ -422,60 +424,132 @@ export function PracticeContent() {
       </header>
 
       <main className="px-4 py-6 max-w-lg md:max-w-5xl mx-auto space-y-6">
-        {/* Skill Picker Modal */}
-        {showSkillPicker && (
+        {/* Practice Landing — when no skill is selected */}
+        {showSkillPicker && !currentSkill && !fullSkillList && (
+          <div className="space-y-6">
+            {/* Quick Resume */}
+            {sessions.length > 0 && (() => {
+              const lastCompleted = sessions.find((s) => s.completed)
+              const lastSkill = lastCompleted ? allSkills.find((sk) => sk.id === lastCompleted.skillId) : null
+              if (!lastSkill) return null
+              return (
+                <div>
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Resume Practice</h2>
+                  <button
+                    onClick={() => selectSkill(lastSkill)}
+                    className="w-full rounded-2xl bg-gradient-to-br from-primary/15 to-card border border-primary/30 p-4 flex items-center gap-4 hover:border-primary/50 transition-colors hover-lift text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-primary uppercase tracking-wider font-medium">Last practiced</p>
+                      <p className="font-semibold truncate">{lastSkill.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{lastSkill.category} · {lastSkill.difficulty}</p>
+                    </div>
+                    <svg className="w-5 h-5 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )
+            })()}
+
+            {/* Quick Pick — top skills for active sport */}
+            <div>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Start</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {filteredSkills.slice(0, 4).map((skill) => (
+                  <button
+                    key={skill.id}
+                    onClick={() => selectSkill(skill)}
+                    className="text-left rounded-2xl bg-card border border-border p-4 hover:border-primary/40 transition-all hover-lift"
+                  >
+                    <span
+                      className={cn(
+                        "inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mb-2",
+                        skill.difficulty === "beginner" && "bg-emerald-500/10 text-emerald-500",
+                        skill.difficulty === "intermediate" && "bg-amber-500/10 text-amber-500",
+                        skill.difficulty === "advanced" && "bg-red-500/10 text-red-500",
+                      )}
+                    >
+                      {skill.difficulty}
+                    </span>
+                    <h3 className="font-semibold text-sm line-clamp-2">{skill.name}</h3>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Browse all */}
+            <div className="text-center">
+              <button
+                onClick={() => setFullSkillList(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                Browse all {filteredSkills.length} skills →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Full Skill Picker — when browsing all */}
+        {showSkillPicker && fullSkillList && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">All Skills</h2>
+              <button onClick={() => setFullSkillList(false)} className="text-xs text-primary hover:underline">← Back</button>
+            </div>
+            {filteredSkills.map((skill, i) => (
+              <button
+                key={skill.id}
+                onClick={() => selectSkill(skill)}
+                className={cn(
+                  "w-full text-left rounded-2xl bg-card border p-4 transition-all hover-lift",
+                  currentSkill?.id === skill.id ? "border-primary ring-2 ring-primary/20" : "border-border",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">{skill.name}</h3>
+                    <p className="text-muted-foreground text-sm">{skill.category}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-xs font-medium",
+                      skill.difficulty === "beginner" && "bg-emerald-500/10 text-emerald-500",
+                      skill.difficulty === "intermediate" && "bg-amber-500/10 text-amber-500",
+                      skill.difficulty === "advanced" && "bg-red-500/10 text-red-500",
+                    )}
+                  >
+                    {skill.difficulty}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Skill Picker Modal — only when changing skill mid-practice */}
+        {showSkillPicker && currentSkill && !fullSkillList && (
           <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md animate-slide-up">
             <div className="h-full overflow-y-auto">
               <div className="px-4 py-6 max-w-lg mx-auto">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => currentSkill ? setShowSkillPicker(false) : router.back()}
+                      onClick={() => setShowSkillPicker(false)}
                       className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
                     >
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                      <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                      </svg>
-                      What are we training?
-                    </h2>
+                    <h2 className="text-xl font-bold">Switch Skill</h2>
                   </div>
-                </div>
-                {/* Sport Filter */}
-                <div className="flex gap-2 mb-4 overflow-x-auto">
-                  {(["soccer", "basketball", "tennis"] as const).map((sport) => (
-                    <button
-                      key={sport}
-                      onClick={() => setSelectedSport(sport)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
-                        selectedSport === sport
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground",
-                      )}
-                    >
-                      {sport === "soccer" ? (
-                        <span className="inline-flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
-                          Soccer
-                        </span>
-                      ) : sport === "basketball" ? (
-                        <span className="inline-flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
-                          Basketball
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg>
-                          Tennis
-                        </span>
-                      )}
-                    </button>
-                  ))}
                 </div>
                 <div className="space-y-3">
                   {filteredSkills.map((skill, i) => (
@@ -634,6 +708,104 @@ export function PracticeContent() {
               />
             </div>
 
+            {/* Video Analysis */}
+            {!showVideoRecorder && videoAnalysis.state === "idle" && (
+              <div className="mb-8">
+                {userStats.isPro ? (
+                  <button
+                    onClick={() => setShowVideoRecorder(true)}
+                    className="w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-5 text-center hover:bg-primary/10 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                      <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold">Analyze Your Technique</p>
+                    <p className="text-xs text-muted-foreground mt-1">Record or upload a clip for AI-powered feedback</p>
+                  </button>
+                ) : (
+                  <div className="rounded-2xl border border-border bg-card p-5 text-center">
+                    <p className="text-sm font-medium mb-2">Unlock AI Video Analysis</p>
+                    <p className="text-xs text-muted-foreground mb-3">Get AI-powered feedback on your technique form</p>
+                    <Button variant="outline" size="sm" className="rounded-xl text-xs" onClick={() => router.push("/profile")}>
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showVideoRecorder && currentSkill && (
+              <div className="mb-8">
+                <VideoRecorder
+                  mode="both"
+                  skillName={currentSkill.name}
+                  sport={activeSport}
+                  onCancel={() => { setShowVideoRecorder(false); videoAnalysis.reset(); }}
+                  onVideoSelected={(blob) => {
+                    setShowVideoRecorder(false)
+                    videoAnalysis.analyzeVideo(blob, currentSkill.id, currentSkill.name, activeSport, completedSession?.id)
+                  }}
+                />
+              </div>
+            )}
+
+            {videoAnalysis.state === "analyzing" && (
+              <div className="mb-8 rounded-2xl bg-primary/5 border border-primary/20 p-5 text-center">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2 animate-pulse">
+                  <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium">Analyzing your technique...</p>
+                <p className="text-xs text-muted-foreground mt-1">AI is reviewing your {currentSkill?.name} form</p>
+              </div>
+            )}
+
+            {videoAnalysis.state === "error" && videoAnalysis.error && (
+              <div className="mb-8 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-center">
+                <p className="text-sm text-red-500">{videoAnalysis.error}</p>
+                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={videoAnalysis.reset}>Try Again</Button>
+              </div>
+            )}
+
+            {videoAnalysis.state === "ready" && videoAnalysis.result && (
+              <div className="mb-8 rounded-2xl bg-card border border-border p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold">AI Analysis Complete</p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{videoAnalysis.result.summary}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Form", value: videoAnalysis.result.techniqueForm },
+                    { label: "Control", value: videoAnalysis.result.ballControlQuality },
+                    { label: "Accuracy", value: videoAnalysis.result.passAccuracy },
+                    { label: "Power", value: videoAnalysis.result.shotsOnTarget },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-secondary/30 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">{item.label}</span>
+                        <span className="text-xs font-bold text-primary">{item.value}%</span>
+                      </div>
+                      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${item.value}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3 text-center">
+                  Confidence: {Math.round(videoAnalysis.result.confidence * 100)}% · Stats updated on profile
+                </p>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <Button variant="outline" onClick={resetPractice} className="flex-1 h-12 rounded-xl">
                 One More?
@@ -789,7 +961,7 @@ export function PracticeContent() {
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Drill</p>
                   <h2 className="text-xl font-bold">{currentSkill.name}</h2>
                 </div>
-                <button onClick={() => setShowSkillPicker(true)} className="text-primary text-xs font-bold uppercase tracking-wide bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors">
+                <button onClick={() => { setShowSkillPicker(true); setFullSkillList(true) }} className="text-primary text-xs font-bold uppercase tracking-wide bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors">
                   Switch
                 </button>
               </div>
@@ -895,6 +1067,17 @@ export function PracticeContent() {
                 </p>
               </div>
             )}
+            {atSessionLimit && (
+              <div className="rounded-2xl bg-violet-500/10 border border-violet-500/20 p-4 flex gap-3 items-start">
+                <svg className="w-6 h-6 text-violet-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+                <div className="text-sm">
+                  <p className="text-violet-600 font-medium">Session limit reached</p>
+                  <p className="text-muted-foreground mt-0.5">You've used all {sessions.length} free sessions. Upgrade to Precept Pro for unlimited practice.</p>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -905,7 +1088,7 @@ export function PracticeContent() {
               {practiceState === "idle" && (
                 <Button
                   onClick={startPractice}
-                  disabled={!isSupported || !isMobile || permissionStatus === "denied"}
+                  disabled={!isSupported || !isMobile || permissionStatus === "denied" || atSessionLimit}
                   className="w-full h-14 text-lg font-bold rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] transition-all"
                 >
                   {currentSkill ? (

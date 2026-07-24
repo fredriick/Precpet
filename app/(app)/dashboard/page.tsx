@@ -139,14 +139,14 @@ function TrendBadge({ change }: { change: number | null }) {
 
 export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
-  const { userStats, isOnboarded, isLoading, sessions, settings } = useApp()
+  const { userStats, isOnboarded, isLoading, sessions, settings, activeSport } = useApp()
   const { user } = useAuth()
   const { recommendation } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
   const [recommendedSkill, setRecommendedSkill] = useState(allSkills[0])
   const [activeProgram, setActiveProgram] = useState<{ program: Program; progress: ProgramProgress } | null>(null)
 
-  const preferredSport = settings.preferredSport
+  const preferredSport = activeSport
 
   useEffect(() => {
     if (recommendation && recommendation.action === "RECOMMEND" && recommendation.skill) {
@@ -187,7 +187,7 @@ export default function HomePage() {
   const latestAchievementId = userStats.achievements[userStats.achievements.length - 1]
   const latestAchievement = latestAchievementId ? achievements.find((a) => a.id === latestAchievementId) : undefined
 
-  const sportSkills = useMemo(() => getSkillsBySport(preferredSport), [preferredSport])
+  const sportSkills = useMemo(() => getSkillsBySport(activeSport), [activeSport])
   const sportLearnedSkills = userStats.skillsLearned.filter((id) => sportSkills.some((s) => s.id === id))
 
   const recentSessions = useMemo(() => {
@@ -283,7 +283,7 @@ export default function HomePage() {
           </Link>
         )}
 
-        <StreakWidget />
+        <StreakWidget sessions={sessions} registeredAt={user?.createdAt} />
 
         <div className="rounded-2xl bg-card border border-border p-5 flex items-center gap-5">
           <div className="relative flex-shrink-0">
@@ -419,47 +419,67 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {preferredSport === "soccer" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Pass Accuracy</p>
-              <p className="text-3xl font-bold font-mono text-blue-400">{userStats.passAccuracy || 0}%</p>
-              <div className="w-full bg-secondary rounded-full h-1.5 mt-2 overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${userStats.passAccuracy || 0}%` }} />
+        <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{sportLabels[activeSport]} Stats</span>
+            </div>
+            {activeSport === "soccer" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Pass Accuracy</p>
+                    {userStats.passAccuracy > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-blue-400">{userStats.passAccuracy || 0}%</p>
+                  <div className="w-full bg-secondary rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${userStats.passAccuracy || 0}%` }} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Dribbles</p>
+                    {userStats.successfulDribbles > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
+                </div>
               </div>
-            </div>
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Successful Dribbles</p>
-              <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
-            </div>
+            )}
+            {activeSport === "basketball" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Shots on Target</p>
+                    {userStats.shotsOnTarget > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-orange-400">{userStats.shotsOnTarget || 0}</p>
+                </div>
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Dribbles</p>
+                    {userStats.successfulDribbles > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
+                </div>
+              </div>
+            )}
+            {activeSport === "tennis" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Avg Fluidity</p>
+                    {userStats.avgFluidityScore > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
+                </div>
+                <div className="rounded-2xl bg-card p-4 border border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Matches Played</p>
+                  </div>
+                  <p className="text-3xl font-bold font-mono text-foreground">{userStats.matchesPlayed || 0}</p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-
-        {preferredSport === "basketball" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Shots on Target</p>
-              <p className="text-3xl font-bold font-mono text-orange-400">{userStats.shotsOnTarget || 0}</p>
-            </div>
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Successful Dribbles</p>
-              <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
-            </div>
-          </div>
-        )}
-
-        {preferredSport === "tennis" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Avg Fluidity</p>
-              <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
-            </div>
-            <div className="rounded-2xl bg-card p-4 border border-border">
-              <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Matches Played</p>
-              <p className="text-3xl font-bold font-mono text-foreground">{userStats.matchesPlayed || 0}</p>
-            </div>
-          </div>
-        )}
 
         <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-card border border-amber-500/20 p-5 flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
@@ -634,7 +654,7 @@ export default function HomePage() {
         <div className="rounded-2xl bg-card p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              {sportLabels[preferredSport]} Skills Learned
+              Skills Learned
             </h3>
             <span className="text-xs text-muted-foreground">
               {sportLearnedSkills.length} / {sportSkills.length}
@@ -658,9 +678,9 @@ export default function HomePage() {
                 <svg className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <p className="text-muted-foreground text-sm">No {sportLabels[preferredSport].toLowerCase()} skills unlocked yet</p>
-                <Link href="/skills" className="text-xs text-primary hover:underline mt-1 inline-block">
-                  Browse {sportLabels[preferredSport].toLowerCase()} skills
+                <p className="text-muted-foreground text-sm">No skills unlocked yet</p>
+                <Link href="/practice" className="text-xs text-primary hover:underline mt-1 inline-block">
+                  Browse skills
                 </Link>
               </div>
             )}
@@ -680,7 +700,7 @@ export default function HomePage() {
               <p className="text-muted-foreground text-xs">Begin a guided session</p>
             </div>
           </Link>
-          <Link href="/skills" className="block">
+          <Link href="/practice" className="block">
             <div className="rounded-2xl bg-card p-4 border border-border hover:border-primary/50 transition-colors h-full">
               <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center mb-3">
                 <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

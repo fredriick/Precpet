@@ -1,7 +1,7 @@
 "use client"
 
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
-import type { UserStats, PracticeSession, ProgramProgress } from "@/lib/types"
+import type { UserStats, PracticeSession, ProgramProgress, Sport } from "@/lib/types"
 import type { UserSettings } from "@/lib/storage"
 
 interface AchievementRecord {
@@ -67,6 +67,7 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
     currentStreak: 0,
     longestStreak: 0,
     lastPracticeDate: null,
+    isPro: false,
   }
 
   const mergedStats: UserStats = stats
@@ -84,6 +85,7 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
         currentStreak: (stats as Record<string, unknown>).current_streak as number,
         longestStreak: (stats as Record<string, unknown>).longest_streak as number,
         lastPracticeDate: ((stats as Record<string, unknown>).last_practice_date as string) ?? null,
+        isPro: ((stats as Record<string, unknown>).is_pro as boolean) ?? false,
       }
     : baseStats
 
@@ -93,6 +95,8 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
     practiceReminders: true,
     preferredDifficulty: "all",
     preferredSport: "soccer",
+    preferredSports: ["soccer"],
+    activeSport: "soccer",
     theme: "dark",
     weeklyGoalMinutes: 60,
   }
@@ -104,6 +108,8 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
         practiceReminders: (settings as Record<string, unknown>).practice_reminders as boolean,
         preferredDifficulty: (settings as Record<string, unknown>).preferred_difficulty as UserSettings["preferredDifficulty"],
         preferredSport: (settings as Record<string, unknown>).preferred_sport as UserSettings["preferredSport"],
+        preferredSports: ((settings as Record<string, unknown>).preferred_sports as UserSettings["preferredSports"]) || [(settings as Record<string, unknown>).preferred_sport as Sport] || ["soccer"],
+        activeSport: ((settings as Record<string, unknown>).active_sport as Sport) || ((settings as Record<string, unknown>).preferred_sport as Sport) || "soccer",
         theme: (settings as Record<string, unknown>).theme as UserSettings["theme"],
         weeklyGoalMinutes: (settings as Record<string, unknown>).weekly_goal_minutes as number,
       }
@@ -149,6 +155,7 @@ export async function saveCloudStats(userId: string, stats: UserStats): Promise<
     current_streak: stats.currentStreak,
     longest_streak: stats.longestStreak,
     last_practice_date: stats.lastPracticeDate,
+    is_pro: stats.isPro,
     updated_at: new Date().toISOString(),
   })
 }
@@ -162,6 +169,8 @@ export async function saveCloudSettings(userId: string, settings: UserSettings):
     practice_reminders: settings.practiceReminders,
     preferred_difficulty: settings.preferredDifficulty,
     preferred_sport: settings.preferredSport,
+    preferred_sports: settings.preferredSports,
+    active_sport: settings.activeSport,
     theme: settings.theme,
     weekly_goal_minutes: settings.weeklyGoalMinutes,
     updated_at: new Date().toISOString(),

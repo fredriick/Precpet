@@ -28,6 +28,7 @@ const defaultUserStats: UserStats = {
   currentStreak: 0,
   longestStreak: 0,
   lastPracticeDate: null,
+  isPro: false,
 }
 
 export interface UserSettings {
@@ -36,6 +37,8 @@ export interface UserSettings {
   practiceReminders: boolean
   preferredDifficulty: "beginner" | "intermediate" | "advanced" | "all"
   preferredSport: Sport
+  preferredSports: Sport[]
+  activeSport: Sport
   theme: "dark" | "light"
   weeklyGoalMinutes: number
 }
@@ -46,12 +49,14 @@ const defaultSettings: UserSettings = {
   practiceReminders: true,
   preferredDifficulty: "all",
   preferredSport: "soccer",
+  preferredSports: ["soccer"],
+  activeSport: "soccer",
   theme: "dark",
   weeklyGoalMinutes: 60,
 }
 
 const DATA_VERSION_KEY = "precept_data_version"
-const CURRENT_VERSION = 2
+const CURRENT_VERSION = 4
 
 function getStoredVersion(): number {
   const v = safeGetItem(DATA_VERSION_KEY)
@@ -80,6 +85,24 @@ function migrateIfNeeded(): void {
     const settings = safeGetItem(STORAGE_KEYS.settings)
     if (!settings) {
       saveUserSettings(defaultSettings)
+    }
+  }
+
+  // Migration v2 -> v3: add preferredSports array from preferredSport
+  if (version < 3) {
+    const settings = getUserSettings()
+    if (!settings.preferredSports || settings.preferredSports.length === 0) {
+      settings.preferredSports = [settings.preferredSport]
+      saveUserSettings(settings)
+    }
+  }
+
+  // Migration v3 -> v4: add activeSport from preferredSports[0]
+  if (version < 4) {
+    const settings = getUserSettings()
+    if (!settings.activeSport) {
+      settings.activeSport = settings.preferredSports?.[0] || settings.preferredSport || "soccer"
+      saveUserSettings(settings)
     }
   }
 
@@ -205,7 +228,15 @@ export function getUserSettings(): UserSettings {
   const stored = safeGetItem(STORAGE_KEYS.settings)
   if (stored) {
     try {
-      return { ...defaultSettings, ...JSON.parse(stored) }
+      const parsed = JSON.parse(stored)
+      const merged = { ...defaultSettings, ...parsed }
+      if (!Array.isArray(merged.preferredSports) || merged.preferredSports.length === 0) {
+        merged.preferredSports = [merged.preferredSport || "soccer"]
+      }
+      if (!merged.activeSport) {
+        merged.activeSport = merged.preferredSports[0] || "soccer"
+      }
+      return merged
     } catch {
       return defaultSettings
     }
