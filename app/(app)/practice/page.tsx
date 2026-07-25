@@ -106,12 +106,12 @@ function SkillsTab() {
             </svg>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recommended for You</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-3">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-3 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
             {recommendedSkills.map((skill) => (
               <Link
                 key={skill.id}
                 href={`/skills/${skill.id}`}
-                className="flex-shrink-0 w-44 rounded-2xl bg-card border border-border p-4 hover:border-primary/40 transition-all hover-lift"
+                className="flex-shrink-0 w-44 md:w-full rounded-2xl bg-card border border-border p-4 hover:border-primary/40 transition-all hover-lift"
               >
                 <span
                   className={cn(
@@ -196,7 +196,7 @@ function SkillsTab() {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredSkills.map((skill, index) => (
           <div
             key={skill.id}
@@ -493,19 +493,19 @@ export default function PracticePage() {
           </div>
           <Tabs defaultValue="practice">
             <TabsList className="w-full bg-secondary/50">
+              <TabsTrigger value="practice" className="flex-1 text-xs">Practice</TabsTrigger>
               <TabsTrigger value="skills" className="flex-1 text-xs">Skills</TabsTrigger>
               <TabsTrigger value="programs" className="flex-1 text-xs">Programs</TabsTrigger>
-              <TabsTrigger value="practice" className="flex-1 text-xs">Practice</TabsTrigger>
             </TabsList>
             <div className="py-4">
+              <TabsContent value="practice">
+                <PracticeTab />
+              </TabsContent>
               <TabsContent value="skills">
                 <SkillsTab />
               </TabsContent>
               <TabsContent value="programs">
                 <ProgramsTab />
-              </TabsContent>
-              <TabsContent value="practice">
-                <PracticeTab />
               </TabsContent>
             </div>
           </Tabs>
