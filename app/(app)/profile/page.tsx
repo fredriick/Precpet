@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
@@ -11,10 +11,16 @@ import { allSkills } from "@/lib/skills-database"
 import { achievements } from "@/lib/achievements-database"
 import { cn } from "@/lib/utils"
 import { LogoutButton } from "@/components/logout-button"
+import { usePaddle } from "@/hooks/use-paddle"
 
 export default function ProfilePage() {
   const { userStats, settings, updateSettings, sessions, atSessionLimit } = useApp()
   const { user } = useAuth()
+  const { loaded: paddleLoaded, openCheckout } = usePaddle()
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month")
+
+  const monthlyPriceId = process.env.NEXT_PUBLIC_PADDLE_MONTHLY_PRICE_ID
+  const yearlyPriceId = process.env.NEXT_PUBLIC_PADDLE_YEARLY_PRICE_ID
 
   const totalSkills = allSkills.length
   const learnedSkills = userStats.skillsLearned.length
@@ -297,35 +303,129 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Cloud Storage */}
-        <div className={cn("rounded-2xl bg-card border p-6", atSessionLimit ? "border-violet-500/30" : "border-border")}>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Cloud Storage</h3>
-            <span className={cn("text-xs font-medium", atSessionLimit ? "text-violet-500" : "text-muted-foreground")}>
-              {sessions.length} / {SESSION_LIMIT} sessions
-            </span>
-          </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                atSessionLimit
-                  ? "bg-gradient-to-r from-violet-500 to-violet-400"
-                  : "bg-gradient-to-r from-emerald-500 to-emerald-400",
-              )}
-              style={{ width: `${Math.min(100, (sessions.length / SESSION_LIMIT) * 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {atSessionLimit
-              ? "Session limit reached. Upgrade to Precept Pro for unlimited practice."
-              : `${SESSION_LIMIT - sessions.length} sessions remaining on the free plan`}
-          </p>
-          {atSessionLimit && (
-            <div className="mt-3 rounded-xl bg-violet-500/10 border border-violet-500/20 p-3">
-              <p className="text-violet-600 text-xs font-medium">Upgrade to Pro for unlimited sessions, advanced analytics, and priority support.</p>
-            </div>
+        {/* Pro Subscription */}
+        <div className={cn("rounded-2xl bg-card border p-6", userStats.isPro ? "border-emerald-500/30" : "border-border")}>
+          {userStats.isPro ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Precept Pro</h3>
+                    <p className="text-xs text-emerald-500 font-medium">Active</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase">
+                  Pro
+                </span>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Unlimited practice sessions</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>AI-powered video analysis</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Advanced analytics & insights</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Priority support</li>
+              </ul>
+              <p className="text-xs text-muted-foreground">Manage your subscription in the Paddle customer portal.</p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Upgrade to Pro</h3>
+                    <p className="text-xs text-muted-foreground">Unlock everything Precept has to offer</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Billing toggle */}
+              <div className="flex bg-secondary/50 rounded-xl p-1 mb-4">
+                {(["month", "year"] as const).map((interval) => (
+                  <button
+                    key={interval}
+                    onClick={() => setBillingInterval(interval)}
+                    className={cn(
+                      "flex-1 py-2 text-xs font-medium rounded-lg transition-all",
+                      billingInterval === interval
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {interval === "month" ? "Monthly" : "Yearly"}
+                    {interval === "year" && <span className="ml-1 text-emerald-500">-20%</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Pricing */}
+              <div className="text-center mb-4">
+                <span className="text-3xl font-bold">{billingInterval === "month" ? "$9" : "$89"}</span>
+                <span className="text-muted-foreground text-sm">/{billingInterval === "month" ? "month" : "year"}</span>
+              </div>
+
+              <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Unlimited practice sessions</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>AI-powered video analysis</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Advanced analytics & insights</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Priority support</li>
+              </ul>
+
+              <Button
+                onClick={() => {
+                  const priceId = billingInterval === "month" ? monthlyPriceId : yearlyPriceId
+                  if (!priceId || !user?.id) return
+                  openCheckout({
+                    priceId,
+                    customerEmail: user?.email,
+                    userId: user?.id,
+                    onSuccess: () => {
+                      setTimeout(() => window.location.reload(), 3000)
+                    },
+                  })
+                }}
+                disabled={!paddleLoaded || !monthlyPriceId}
+                className="w-full h-12 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-semibold"
+              >
+                {!monthlyPriceId
+                  ? "Pro coming soon"
+                  : !paddleLoaded
+                    ? "Loading..."
+                    : `Subscribe ${billingInterval === "month" ? "$9/mo" : "$89/yr"}`}
+              </Button>
+            </>
           )}
+
+          {/* Session limit */}
+          <div className={cn("mt-4 pt-4 border-t border-border")}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">Session usage</span>
+              <span className="text-xs font-medium">
+                {sessions.length} / {userStats.isPro ? "∞" : SESSION_LIMIT}
+              </span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  userStats.isPro
+                    ? "bg-emerald-500"
+                    : atSessionLimit
+                      ? "bg-gradient-to-r from-violet-500 to-violet-400"
+                      : "bg-gradient-to-r from-emerald-500 to-emerald-400",
+                )}
+                style={{ width: userStats.isPro ? "100%" : `${Math.min(100, (sessions.length / SESSION_LIMIT) * 100)}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Sign Out */}

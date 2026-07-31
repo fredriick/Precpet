@@ -55,7 +55,7 @@ export default function RootLayout({
           __html: `(function(){try{var s=JSON.parse(localStorage.getItem("precept_settings"));if(s&&s.theme)document.documentElement.className=s.theme}catch(e){}})()`,
         }} />
       </head>
-      <body className={`${autourOne.variable} font-sans antialiased bg-background text-foreground selection:bg-primary/30`}>
+      <body className={`${autourOne.variable} font-sans antialiased bg-background text-foreground selection:bg-primary/30`} suppressHydrationWarning>
         <AuthProvider>
           <AppProvider>
             {children}

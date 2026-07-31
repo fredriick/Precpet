@@ -7,6 +7,7 @@ import { PreceptLogo } from "@/components/precept-logo"
 import { HeroScene } from "@/components/hero-scene"
 import { ScrollReveal, StaggerContainer, StaggerItem, FloatIn } from "@/components/scroll-animations"
 import { useAuth } from "@/contexts/auth-context"
+import { usePaddle } from "@/hooks/use-paddle"
 
 const features = [
   {
@@ -69,6 +70,181 @@ function AnimatedStat({ value, suffix, label, display }: { value: number; suffix
         <div className="text-xs text-white/60 mt-1 tracking-wide uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">{label}</div>
       </div>
     </ScrollReveal>
+  )
+}
+
+function PricingSection() {
+  const { user } = useAuth()
+  const { loaded: paddleLoaded, error: paddleError, openCheckout } = usePaddle()
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month")
+
+  const monthlyPriceId = process.env.NEXT_PUBLIC_PADDLE_MONTHLY_PRICE_ID
+  const yearlyPriceId = process.env.NEXT_PUBLIC_PADDLE_YEARLY_PRICE_ID
+
+  const tiers = [
+    {
+      name: "Free",
+      price: "$0",
+      period: "/forever",
+      description: "Perfect for getting started",
+      features: [
+        "50 practice sessions",
+        "Real-time motion tracking",
+        "Basic progress tracking",
+        "Streak & achievements",
+        "Community leaderboard",
+      ],
+      highlighted: false,
+    },
+    {
+      name: "Pro",
+      price: billingInterval === "month" ? "$9" : "$89",
+      period: billingInterval === "month" ? "/month" : "/year",
+      description: "For serious athletes",
+      features: [
+        "Unlimited practice sessions",
+        "AI-powered video analysis",
+        "Advanced analytics & insights",
+        "Priority support",
+        "All Free features",
+      ],
+      highlighted: true,
+    },
+  ]
+
+  return (
+    <section className="relative px-6 pb-40" id="pricing">
+      <div className="max-w-7xl mx-auto">
+        <ScrollReveal>
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-white/40 mb-6 tracking-wide uppercase">
+              Simple Pricing
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
+              One plan.{" "}
+              <span className="bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent">
+                Unlimited potential.
+              </span>
+            </h2>
+            <p className="text-white/40 mt-4 max-w-lg mx-auto">
+              Start free and upgrade when you&apos;re ready to take your training to the next level.
+            </p>
+          </div>
+        </ScrollReveal>
+
+        {/* Billing toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
+            {(["month", "year"] as const).map((interval) => (
+              <button
+                key={interval}
+                onClick={() => setBillingInterval(interval)}
+                className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
+                  billingInterval === interval
+                    ? "bg-emerald-500/20 text-emerald-300 shadow-sm border border-emerald-500/20"
+                    : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                {interval === "month" ? "Monthly" : "Yearly"}
+                {interval === "year" && (
+                  <span className="ml-1.5 text-emerald-400 text-xs font-semibold">-20%</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <StaggerContainer className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          {tiers.map((tier, i) => (
+            <StaggerItem key={i}>
+              <div
+                className={`relative rounded-2xl p-8 h-full ${
+                  tier.highlighted
+                    ? "bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.1)]"
+                    : "bg-white/[0.03] border border-white/[0.06]"
+                }`}
+              >
+                {tier.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg shadow-emerald-500/30">
+                    Most Popular
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-1">{tier.name}</h3>
+                  <p className="text-sm text-white/40">{tier.description}</p>
+                </div>
+
+                <div className="mb-6">
+                  <span className="text-4xl font-bold">{tier.price}</span>
+                  <span className="text-white/40 text-sm">{tier.period}</span>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {tier.features.map((feature, fi) => (
+                    <li key={fi} className="flex items-center gap-3 text-sm text-white/70">
+                      <svg
+                        className={`w-4 h-4 flex-shrink-0 ${
+                          tier.highlighted ? "text-emerald-400" : "text-white/30"
+                        }`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                {tier.highlighted ? (
+                  user ? (
+                    <button
+                      onClick={() => {
+                        const priceId = billingInterval === "month" ? monthlyPriceId : yearlyPriceId
+                        if (!priceId || !user?.id) return
+                        openCheckout({
+                          priceId,
+                          customerEmail: user?.email,
+                          userId: user?.id,
+                          onSuccess: () => setTimeout(() => window.location.reload(), 3000),
+                        })
+                      }}
+                      disabled={!paddleLoaded || !monthlyPriceId}
+                      className="relative group w-full"
+                    >
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl opacity-70 group-hover:opacity-100 blur transition duration-300" />
+                      <div className="relative w-full py-3 bg-[#0a0a0f] rounded-xl text-sm font-semibold group-hover:bg-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        {!monthlyPriceId
+                          ? "Coming Soon"
+                          : paddleError
+                            ? "Unavailable"
+                            : !paddleLoaded
+                              ? "Loading..."
+                              : `Subscribe ${billingInterval === "month" ? "$9/mo" : "$89/yr"}`}
+                      </div>
+                    </button>
+                  ) : (
+                    <Link
+                      href="/register"
+                      className="relative group block w-full"
+                    >
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl opacity-70 group-hover:opacity-100 blur transition duration-300" />
+                      <div className="relative w-full py-3 bg-[#0a0a0f] rounded-xl text-sm font-semibold text-center group-hover:bg-transparent transition-colors">
+                        Sign Up Free
+                      </div>
+                    </Link>
+                  )
+                ) : (
+                  <div className="w-full py-3 rounded-xl text-sm font-medium text-white/40 bg-white/[0.04] border border-white/[0.06] text-center">
+                    {user ? "Current Plan" : "Get Started Free"}
+                  </div>
+                )}
+              </div>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+      </div>
+    </section>
   )
 }
 
@@ -361,6 +537,9 @@ export default function LandingPage() {
           </StaggerContainer>
         </div>
       </section>
+
+      {/* Pricing */}
+      <PricingSection />
 
       {/* CTA */}
       <FloatIn>
