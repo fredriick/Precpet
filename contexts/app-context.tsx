@@ -143,7 +143,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshData = useCallback(() => {
     setUserStats(getUserStats())
     setSessions(getPracticeSessions())
-    setSettings(getUserSettings())
+    const s = getUserSettings()
+    setSettings(s)
+    setActiveSportState(s.activeSport || s.preferredSports?.[0] || "soccer")
   }, [])
 
   const syncStats = useCallback(

@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { PreceptLogo } from "@/components/precept-logo"
 import { cn } from "@/lib/utils"
 import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/contexts/auth-context"
 import { startOfDay, subDays } from "date-fns"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import type { ReactNode } from "react"
@@ -181,6 +182,7 @@ export function Sidebar() {
                         <p className="text-xs text-right text-sidebar-foreground">{daysThisWeek}/{weeklyGoal} days</p>
                     </div>
                     <ThemeToggle />
+                    <LogoutButton />
                 </div>
             )}
         </aside>
@@ -206,6 +208,28 @@ function ThemeToggle() {
                 </svg>
             )}
             <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+    )
+}
+
+function LogoutButton() {
+    const { logout } = useAuth()
+    const router = useRouter()
+
+    const handleLogout = () => {
+        logout()
+        router.replace("/")
+    }
+
+    return (
+        <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all font-medium"
+        >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span>Log Out</span>
         </button>
     )
 }

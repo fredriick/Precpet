@@ -148,7 +148,7 @@ export function StreakWidget({ sessions, registeredAt }: StreakWidgetProps) {
         </div>
 
         {/* Weeks */}
-        <div className="max-h-[140px] overflow-y-auto space-y-1 pr-1 scrollbar-thin">
+        <div className="max-h-[140px] overflow-y-auto space-y-1 pr-1 pb-1 scrollbar-thin [mask-image:linear-gradient(to_bottom,black_88%,transparent)]">
           {[...weeks].reverse().map((week, wi) => (
             <div key={wi} className="flex gap-1">
               {week.days.map((day) => (

@@ -252,8 +252,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-16 max-w-lg md:max-w-5xl mx-auto">
-          <div className="flex items-center gap-3">
-            <PreceptLogo className="w-9 h-9" />
+          <div className="flex items-center">
             <div>
               <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || "athlete"}!</h1>
               <p className="text-xs text-muted-foreground">{sportLabels[preferredSport]} — let's level up today</p>

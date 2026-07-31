@@ -72,6 +72,7 @@ export default function SettingsPage() {
                       : [...current, sport]
                     if (next.length === 0) return // Prevent deselecting all
                     updateSettings({ preferredSports: next, preferredSport: next[0] })
+                    setActiveSport(next.includes(activeSport) ? activeSport : next[0])
                   }}
                   className={cn(
                     "flex-1 py-3 rounded-xl text-sm font-medium transition-all border",
