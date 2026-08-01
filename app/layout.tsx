@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "Precept",
   },
   icons: {
-    icon: "/icon-192.jpg",
+    icon: "/icon.svg",
     apple: "/icon-512.jpg",
   },
   openGraph: {
