@@ -65,6 +65,7 @@ const defaultSettings: UserSettings = {
   activeSport: "soccer",
   theme: "dark",
   weeklyGoalMinutes: 60,
+  motionSource: "phone",
 }
 
 interface AppContextValue {
@@ -122,14 +123,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((snapshot) => {
         if (cancelled || !snapshot) return
         // Cloud wins; also refresh the local cache so exports/import stay consistent.
+        // Merge over defaults so settings written by older clients (missing newer
+        // fields like motionSource) never surface as undefined.
+        const mergedSettings: UserSettings = { ...defaultSettings, ...snapshot.settings }
         saveUserStats(snapshot.userStats)
         snapshot.sessions.forEach((s) => savePracticeSession(s))
-        saveUserSettings(snapshot.settings)
+        saveUserSettings(mergedSettings)
         setUserStats(snapshot.userStats)
         setSessions(snapshot.sessions)
-        setSettings(snapshot.settings)
-        setActiveSportState(snapshot.settings.activeSport || snapshot.settings.preferredSports?.[0] || "soccer")
-        document.documentElement.className = snapshot.settings.theme
+        setSettings(mergedSettings)
+        setActiveSportState(mergedSettings.activeSport || mergedSettings.preferredSports?.[0] || "soccer")
+        document.documentElement.className = mergedSettings.theme
         achievementsRef.current = [...snapshot.userStats.achievements]
       })
       .catch(() => {

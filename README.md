@@ -34,6 +34,11 @@ Precept is a Progressive Web App (PWA) that uses your device's motion sensors to
 - Game performance metrics integration
 - Practice time and fluidity averages
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the product roadmap, including smart watch
+support for phone-free training.
+
 ## Tech Stack
 
 - **Framework**: Next.js 15 with App Router

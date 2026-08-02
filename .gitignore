@@ -31,3 +31,11 @@ next-env.d.ts
 
 # scratch/temp
 tmp_*.txt
+
+# android / wearos
+/wearos/**/build/
+/wearos/**/.gradle/
+/wearos/local.properties
+/wearos/.idea/
+/wearos/**/*.iml
+/wearos/captures/

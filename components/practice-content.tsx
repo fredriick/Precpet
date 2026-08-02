@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { MotionIndicator } from "@/components/motion-indicator"
 import { Button } from "@/components/ui/button"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
+import { useWearableMotion } from "@/hooks/use-wearable-motion"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { getSkillById, allSkills, getSkillsBySport } from "@/lib/skills-database"
@@ -27,9 +28,15 @@ export function PracticeContent() {
   const programStep = searchParams.get("step")
   const selectedSkill = skillId ? getSkillById(skillId) : null
 
-  const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
+  const phoneMotion = useMotionSensor()
+  const mockWearable = searchParams.get("mockWearable") === "1"
+  const wearableMotion = useWearableMotion({ mock: mockWearable })
   const isMobile = typeof window !== "undefined" && (navigator.maxTouchPoints > 1 || /Mobi|Android|iPhone|iPad|iPod|tablet|PlayBook|Silk/i.test(navigator.userAgent))
-  const { addSession, finishSession, settings, sessions, atSessionLimit, userStats, activeSport, setActiveSport } = useApp()
+  const { addSession, finishSession, settings, sessions, atSessionLimit, userStats, activeSport, setActiveSport, updateSettings } = useApp()
+  const activeMotionSource: "phone" | "wearable" = settings.motionSource === "wearable" ? "wearable" : "phone"
+  const motion = activeMotionSource === "wearable" ? wearableMotion : phoneMotion
+  const { isSupported, isTracking, analysis, startTracking, stopTracking } = motion
+  const permissionStatus = phoneMotion.permissionStatus
 
   const [practiceState, setPracticeState] = useState<"idle" | "active" | "paused" | "complete">("idle")
   const [sessionTime, setSessionTime] = useState(0)
@@ -1019,6 +1026,95 @@ export function PracticeContent() {
         {/* Sensor Warnings */}
         {practiceState === "idle" && (
           <>
+            {/* Motion Source */}
+            <div className="rounded-2xl bg-card border border-border p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Motion Source</h3>
+                {wearableMotion.connectionStatus === "connected" && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  onClick={() => updateSettings({ motionSource: "phone" })}
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-sm font-medium transition-all",
+                    activeMotionSource === "phone"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  Phone
+                </button>
+                <button
+                  onClick={() => updateSettings({ motionSource: "wearable" })}
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-sm font-medium transition-all",
+                    activeMotionSource === "wearable"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}
+                >
+                  Smart Watch
+                </button>
+              </div>
+
+              {activeMotionSource === "wearable" && (
+                <div>
+                  {!wearableMotion.isSupported && !mockWearable && (
+                    <p className="text-xs text-amber-600 flex items-start gap-1.5 mb-2">
+                      <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                      </svg>
+                      Web Bluetooth needs an Android phone with Chrome or Edge (not iOS). Open this page there to connect a Wear OS watch.
+                    </p>
+                  )}
+                  {wearableMotion.connectionStatus === "connected" ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <rect x="6" y="2" width="12" height="20" rx="4" />
+                            <path strokeLinecap="round" d="M11 18.5h2" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{wearableMotion.deviceName ?? "Watch connected"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {wearableMotion.battery !== null ? `Battery ${wearableMotion.battery}%` : "Ready to track"}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={wearableMotion.disconnect} className="text-xs text-red-500 hover:underline flex-shrink-0 ml-2">
+                        Disconnect
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void wearableMotion.connect()}
+                        disabled={wearableMotion.connectionStatus === "scanning" || wearableMotion.connectionStatus === "connecting"}
+                        className="w-full rounded-xl text-xs"
+                      >
+                        {wearableMotion.connectionStatus === "scanning" || wearableMotion.connectionStatus === "connecting"
+                          ? "Looking for your watch..."
+                          : "Connect Watch"}
+                      </Button>
+                      {wearableMotion.error && (
+                        <p className="text-xs text-red-500 mt-2">{wearableMotion.error.message}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Goal Setting */}
             {currentSkill && (
               <div className="rounded-2xl bg-card border border-border p-5">
@@ -1053,35 +1149,39 @@ export function PracticeContent() {
               </div>
             )}
 
-            {!isSupported && (
-              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
-                <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <p className="text-amber-600 text-sm">
-                  Motion sensors unavailable. For the best coaching experience, use a mobile device!
-                </p>
-              </div>
-            )}
-            {isSupported && !isMobile && (
-              <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
-                <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <p className="text-amber-600 text-sm">
-                  Practice requires a mobile device with motion sensors. Open this page on your phone for a real coaching experience.
-                </p>
-              </div>
-            )}
-            {permissionStatus === "denied" && (
-              <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 flex gap-3 items-start">
-                <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                </svg>
-                <p className="text-red-600 text-sm">
-                  Motion access denied. We need that to track your sweet moves! Enable it in settings.
-                </p>
-              </div>
+            {activeMotionSource === "phone" && (
+              <>
+                {!isSupported && (
+                  <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
+                    <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <p className="text-amber-600 text-sm">
+                      Motion sensors unavailable. For the best coaching experience, use a mobile device!
+                    </p>
+                  </div>
+                )}
+                {isSupported && !isMobile && (
+                  <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
+                    <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <p className="text-amber-600 text-sm">
+                      Practice requires a mobile device with motion sensors. Open this page on your phone for a real coaching experience.
+                    </p>
+                  </div>
+                )}
+                {permissionStatus === "denied" && (
+                  <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 flex gap-3 items-start">
+                    <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <p className="text-red-600 text-sm">
+                      Motion access denied. We need that to track your sweet moves! Enable it in settings.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
             {atSessionLimit && (
               <div className="rounded-2xl bg-violet-500/10 border border-violet-500/20 p-4 flex gap-3 items-start">
@@ -1104,7 +1204,12 @@ export function PracticeContent() {
               {practiceState === "idle" && (
                 <Button
                   onClick={startPractice}
-                  disabled={!isSupported || !isMobile || permissionStatus === "denied" || atSessionLimit}
+                  disabled={
+                    atSessionLimit ||
+                    (activeMotionSource === "phone"
+                      ? !isSupported || !isMobile || permissionStatus === "denied"
+                      : !wearableMotion.isSupported)
+                  }
                   className="w-full h-14 text-lg font-bold rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] transition-all"
                 >
                   {currentSkill ? (

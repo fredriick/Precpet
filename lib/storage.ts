@@ -41,6 +41,7 @@ export interface UserSettings {
   activeSport: Sport
   theme: "dark" | "light"
   weeklyGoalMinutes: number
+  motionSource: "phone" | "wearable"
 }
 
 const defaultSettings: UserSettings = {
@@ -53,10 +54,11 @@ const defaultSettings: UserSettings = {
   activeSport: "soccer",
   theme: "dark",
   weeklyGoalMinutes: 60,
+  motionSource: "phone",
 }
 
 const DATA_VERSION_KEY = "precept_data_version"
-const CURRENT_VERSION = 4
+const CURRENT_VERSION = 5
 
 function getStoredVersion(): number {
   const v = safeGetItem(DATA_VERSION_KEY)
@@ -102,6 +104,15 @@ function migrateIfNeeded(): void {
     const settings = getUserSettings()
     if (!settings.activeSport) {
       settings.activeSport = settings.preferredSports?.[0] || settings.preferredSport || "soccer"
+      saveUserSettings(settings)
+    }
+  }
+
+  // Migration v4 -> v5: add motionSource (defaults merge already backfills it)
+  if (version < 5) {
+    const settings = getUserSettings()
+    if (!settings.motionSource) {
+      settings.motionSource = "phone"
       saveUserSettings(settings)
     }
   }
