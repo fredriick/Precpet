@@ -39,20 +39,50 @@ a Wear OS emulator or watch:
 
 ## Testing
 
-- **Emulator:** the Wear AVD reports synthetic sensor data, so the GATT server,
-  packet encoding, and PWA connection can be validated without hardware. Add
-  `?mockWearable=1` to the PWA practice URL to test the source-switch UI on
+### Unit tests (any machine, no hardware)
+
+```sh
+./gradlew :app:testDebugUnitTest
+```
+
+`PreceptMotionProtocolTest` asserts the Kotlin encoder emits the exact same
+16-byte packets as the TypeScript reference encoder (`tests/lib/wearable-protocol.test.ts`)
+for the same sample values — the cross-language byte-parity contract.
+
+### Emulator (Wear OS AVD)
+
+The Android emulator has **no Bluetooth radio**, so the BLE link itself can't be
+exercised — but everything before it can:
+
+1. Create a Wear OS 4 AVD (API 34) and run the app.
+2. Tap **Start** (grant the BLE + foreground-service permissions when prompted).
+3. Open `Extended Controls → Virtual Sensors → Device Pose` and drag the
+   X/Y/Z sliders to feed synthetic accelerometer/gyroscope data.
+4. Watch the UI counter **Encoded: N packets** climb (~50/s), and confirm
+   `logcat` shows throttled `PreceptMotion` packet hex dumps.
+5. The watch also logs "No BLE advertiser … no Bluetooth radio" — **expected**
+   on an emulator, not an error.
+
+You cannot validate the actual phone↔watch link on an emulator; that needs
+hardware (below).
+
+### Hardware
+
+- Pair the watch and phone once in the OS Bluetooth settings, then connect from
+  the PWA (Android Chrome/Edge) via the **Smart Watch** motion source.
+- Add `?mockWearable=1` to the PWA practice URL to test the source-switch UI on
   desktop without any watch.
-- **Hardware:** pair the watch and phone once in the OS Bluetooth settings, then
-  connect from the PWA.
 
 ## Layout
 
 ```
 app/src/main/java/com/precpet/wearos/
-├── MainActivity.kt            # Wear Compose start/stop screen
+├── MainActivity.kt            # Wear Compose start/stop screen + packet counter
 ├── protocol/PreceptMotionProtocol.kt   # packet encode + UUIDs (mirror of docs)
 ├── ble/PreceptBleServer.kt    # GATT server + advertising + command handling
 ├── sensor/MotionSensorService.kt       # foreground service
 └── stream/PreceptMotionStreamer.kt     # sensor fan-out to connected phones
+
+app/src/test/java/com/precpet/wearos/protocol/
+└── PreceptMotionProtocolTest.kt        # byte-parity vs the TS reference encoder
 ```

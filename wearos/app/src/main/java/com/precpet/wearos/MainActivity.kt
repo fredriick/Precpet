@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,8 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.precpet.wearos.sensor.MotionSensorService
+import com.precpet.wearos.stream.PreceptMotionStreamer
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,16 +43,28 @@ class MainActivity : ComponentActivity() {
 fun WatchScreen() {
     val context = LocalContext.current
     var streaming by remember { mutableStateOf(isServiceRunning(context)) }
+    var encoded by remember { mutableStateOf(0) }
+
+    LaunchedEffect(streaming) {
+        while (streaming) {
+            encoded = PreceptMotionStreamer.packetsEncoded
+            delay(1000)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = "Precept", style = MaterialTheme.typography.titleLarge)
+        Text(text = "Precept", style = MaterialTheme.typography.title1)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = if (streaming) "Streaming motion — keep your phone in range" else "Standby",
+            style = MaterialTheme.typography.body2,
+        )
+        Text(
+            text = if (streaming) "Encoded: $encoded packets" else "",
             style = MaterialTheme.typography.body2,
         )
         Spacer(modifier = Modifier.height(16.dp))

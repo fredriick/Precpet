@@ -86,7 +86,10 @@ class PreceptBleServer(private val context: Context) {
     }
 
     private fun startAdvertising(adapter: BluetoothAdapter) {
-        val leAdvertiser = adapter.bluetoothLeAdvertiser ?: return
+        val leAdvertiser = adapter.bluetoothLeAdvertiser ?: run {
+            Log.w(TAG, "No BLE advertiser on this device — expected on the Android emulator, which has no Bluetooth radio")
+            return
+        }
         advertiser = leAdvertiser
         val settings = AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
@@ -131,18 +134,18 @@ class PreceptBleServer(private val context: Context) {
         }
 
         override fun onStartFailure(errorCode: Int) {
-            Log.e(TAG, "Advertising failed: $errorCode")
+            Log.e(TAG, "Advertising failed: $errorCode (BLE unavailable — expected on the Android emulator)")
         }
     }
 
     private val callback = object : BluetoothGattServerCallback() {
         override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
             when (newState) {
-                android.bluetooth.Profile.STATE_CONNECTED -> {
+                android.bluetooth.BluetoothProfile.STATE_CONNECTED -> {
                     synchronized(connectedDevices) { connectedDevices.add(device) }
                     Log.i(TAG, "Connected: ${device.address}")
                 }
-                android.bluetooth.Profile.STATE_DISCONNECTED -> {
+                android.bluetooth.BluetoothProfile.STATE_DISCONNECTED -> {
                     synchronized(connectedDevices) { connectedDevices.remove(device) }
                     PreceptMotionStreamer.stop()
                     Log.i(TAG, "Disconnected: ${device.address}")
@@ -171,8 +174,8 @@ class PreceptBleServer(private val context: Context) {
             characteristic: BluetoothGattCharacteristic,
             preparedWrite: Boolean,
             responseNeeded: Boolean,
-            value: ByteArray?,
             offset: Int,
+            value: ByteArray?,
         ) {
             when (characteristic.uuid) {
                 PreceptMotionProtocol.COMMAND_CHARACTERISTIC_UUID_OBJ -> handleCommand(value)

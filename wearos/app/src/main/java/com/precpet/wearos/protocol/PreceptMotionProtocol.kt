@@ -42,12 +42,14 @@ object PreceptMotionProtocol {
         val packet = ByteArray(PACKET_SIZE)
         packet[0] = PACKET_VERSION.toByte()
         writeInt16LE(packet, 1, counter) // counter is uint16; writeInt16LE keeps the low 16 bits
-        writeInt16LE(packet, 3, (accelX * 100).toInt())
-        writeInt16LE(packet, 5, (accelY * 100).toInt())
-        writeInt16LE(packet, 7, (accelZ * 100).toInt())
-        writeInt16LE(packet, 9, (gyroX * 10).toInt())
-        writeInt16LE(packet, 11, (gyroY * 10).toInt())
-        writeInt16LE(packet, 13, (gyroZ * 10).toInt())
+        // Round like the TS reference encoder (Math.round, ties toward +inf) so
+        // both implementations emit identical bytes (see PreceptMotionProtocolTest).
+        writeInt16LE(packet, 3, Math.round(accelX * 100))
+        writeInt16LE(packet, 5, Math.round(accelY * 100))
+        writeInt16LE(packet, 7, Math.round(accelZ * 100))
+        writeInt16LE(packet, 9, Math.round(gyroX * 10))
+        writeInt16LE(packet, 11, Math.round(gyroY * 10))
+        writeInt16LE(packet, 13, Math.round(gyroZ * 10))
         packet[15] = 0x00
         return packet
     }
