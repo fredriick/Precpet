@@ -1,6 +1,6 @@
 # Precept - AI-Powered Sports Coach
 
-Precept is a Progressive Web App (PWA) that uses your device's motion sensors to analyze movement fluidity and provide personalized sports skill recommendations. It demonstrates the integration of device sensors, AI analysis, and video generation.
+Precept is a Progressive Web App (PWA) that uses your device's motion sensors to analyze movement fluidity and provide personalized sports skill recommendations. It demonstrates the integration of device sensors, AI analysis, and video generation. Wearable support means you can train phone-free: a Wear OS watch (or any BLE watch on iPhone) streams your motion straight into the app.
 
 ## Features
 
@@ -9,6 +9,18 @@ Precept is a Progressive Web App (PWA) that uses your device's motion sensors to
 - Fluidity score calculation based on acceleration smoothness
 - Intensity detection and direction change tracking
 - Works best on mobile devices with accelerometer support
+
+### Wearable Motion Tracking
+- Connect a BLE smart watch for phone-free training with a 50 Hz motion stream
+- **Wear OS**: companion app (`wearos/`) advertises a GATT server and streams
+  IMU packets at 50 Hz; the protocol is shared with the web layer
+- **iOS**: a thin native receiver (`ios/`, Swift + Capacitor) lets iPhone users
+  pair any BLE watch, not just Wear OS
+- One transport abstraction (`lib/wearable-transport.ts`) with four backends:
+  Web Bluetooth (Android/desktop Chrome, Edge), native bridge (iOS app),
+  a mock stream (`?mockWearable=1`), and an explicit unsupported fallback
+- Binary 16-byte packet protocol shared across Kotlin, Swift, and TypeScript —
+  see [docs/wearable-protocol.md](docs/wearable-protocol.md)
 
 ### AI-Powered Recommendations
 - Analyzes your game stats and practice performance
@@ -49,6 +61,9 @@ support for phone-free training.
 - **AI**: Claude (via Vercel AI SDK) for skill analysis
 - **Video**: Google Veo API for tutorial generation (graceful placeholder fallback)
 - **PWA**: Web manifest for installability
+- **Wearables**: Wear OS companion app (Kotlin, BLE GATT server), iOS receiver
+  (Swift + [Capacitor](https://capacitorjs.com/) 7), Web Bluetooth; shared 16-byte
+  binary motion protocol with byte-parity unit tests in Kotlin and TypeScript
 
 ## Getting Started
 
@@ -126,6 +141,23 @@ On mobile devices, you can install Precept as a standalone app:
 2. Tap "Add to Home Screen" (iOS Safari) or the install prompt (Android Chrome)
 3. Launch from your home screen for the full-screen experience
 
+### Wearable Setup
+
+- **Wear OS watch**: build and install the companion app from `wearos/` (Android
+  Studio; requires JDK 17 and the Android SDK). It advertises the motion service
+  over Bluetooth LE with no setup — the PWA finds it via the Connect Watch flow.
+- **Android phone (no watch app build)**: the PWA connects over Web Bluetooth in
+  Chrome or Edge.
+- **iPhone**: use the native receiver (`ios/`), a Capacitor wrapper that loads
+  the deployed PWA and bridges Bluetooth to it. Build on macOS with Xcode:
+  `npx cap sync ios`, then `pod install` and run the `App` scheme. Set
+  `PRECEPT_APP_URL` to your deployed PWA URL before release.
+- **Demo mode**: append `?mockWearable=1` to exercise the full motion pipeline
+  without hardware.
+
+See [docs/wearable-protocol.md](docs/wearable-protocol.md) for the BLE protocol
+and [ROADMAP.md](ROADMAP.md) for hardware validation steps.
+
 ## Project Structure
 
 ```
@@ -139,6 +171,14 @@ On mobile devices, you can install Precept as a standalone app:
 │   ├── progress/               # Progress tracking
 │   ├── skills/                 # Skills library & detail
 │   └── page.tsx                # Home dashboard
+├── wearos/                     # Wear OS companion app (Kotlin)
+│   └── app/src/main/java/com/precpet/wearos/
+│       ├── protocol/           # 16-byte packet encode/decode (byte-parity tested)
+│       ├── stream/             # 50 Hz IMU sampling + BLE notification stream
+│       └── ble/                # GATT server: advertising + notifications
+├── ios/                        # iOS receiver (Swift + Capacitor)
+│   └── App/App/PreceptBlePlugin.swift  # BLE central → JS bridge
+├── capacitor.config.ts         # Capacitor config (loads the deployed PWA)
 ├── components/
 │   ├── ui/                     # shadcn/ui components
 │   ├── bottom-nav.tsx          # Navigation bar
@@ -150,6 +190,7 @@ On mobile devices, you can install Precept as a standalone app:
  │   └── auth-context.tsx        # Supabase auth state
  ├── hooks/
  │   ├── use-motion-sensor.ts    # DeviceMotion API hook
+ │   ├── use-wearable-motion.ts  # BLE watch hook (over wearable-transport)
  │   └── use-video-generation.ts # Veo video hook (+ demo fallback)
  ├── lib/
  │   ├── supabase-browser.ts     # Anon Supabase client (browser)
@@ -160,7 +201,9 @@ On mobile devices, you can install Precept as a standalone app:
  │   ├── prisma.ts               # Prisma client singleton (scripts only)
  │   ├── skills-database.ts      # Soccer skills catalog
  │   ├── storage.ts              # localStorage utilities (offline cache)
- │   └── types.ts                # TypeScript definitions
+ │   ├── types.ts                # TypeScript definitions
+ │   ├── wearable-protocol.ts    # BLE packet protocol (source of truth for bytes)
+ │   └── wearable-transport.ts   # Transport abstraction (web/native/mock)
  ├── app/api/leaderboard/        # GET/POST weekly leaderboard
  ├── supabase/                   # SQL: auth.sql, schema.sql, leaderboard.sql
  ├── prisma/                     # Prisma schema + generated client

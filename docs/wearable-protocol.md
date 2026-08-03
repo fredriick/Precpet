@@ -8,7 +8,11 @@ app, or a dedicated wrist band.
 This document is the source of truth. Reference implementations:
 
 - Peripheral (watch/band): `wearos/` (Wear OS companion app)
-- Central (phone/PWA): `hooks/use-wearable-motion.ts`
+- Central (Android/desktop PWA): Web Bluetooth transport in
+  `lib/wearable-transport.ts` (`hooks/use-wearable-motion.ts` decodes + analyzes)
+- Central (iOS): `ios/App/App/PreceptBlePlugin.swift` — CoreBluetooth byte-pipe
+  that relays the same packets to the PWA via the native-bridge transport in
+  `lib/wearable-transport.ts`
 
 ## 1. Physical assumptions
 
@@ -105,10 +109,11 @@ on connect.
 ## 9. Advertising
 
 The peripheral advertises the **service UUID** so the PWA can find it with
-`navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] })`.
-It may also use the local name prefix `Precept`. No pairing (bonding) is
-required for the prototype; sensitive builds should enable `LE Secure
-Connections`.
+`navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] })`
+(Android/desktop) or the iOS receiver's `CBCentralManager`
+`scanForPeripherals(withServices: [SERVICE_UUID])`. It may also use the local
+name prefix `Precept`. No pairing (bonding) is required for the prototype;
+sensitive builds should enable `LE Secure Connections`.
 
 ## 10. Quality of service
 
