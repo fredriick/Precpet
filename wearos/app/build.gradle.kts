@@ -46,4 +46,5 @@ dependencies {
     implementation(libs.androidx.wear.compose.foundation)
 
     testImplementation(libs.junit)
+    testImplementation(libs.orgjson)
 }

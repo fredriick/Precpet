@@ -128,3 +128,42 @@ sensitive builds should enable `LE Secure Connections`.
 New peripheral types (watchOS, Garmin, Fitbit, bands) implement this exact
 service. Versioned protocol changes bump the packet `version` byte; unknown
 versions are ignored by the PWA with a warning.
+
+## 12. Session Store (offline capture)
+
+For phone-free training, the peripheral may capture sessions **on-device** and
+store them locally, so nothing is lost when the phone is out of BLE range. A
+stored session is one flat JSON document — the exact shape the Wear OS app
+persists to disk and will later upload:
+
+```json
+{
+  "v": 1,
+  "id": "6f1c3b9a-…",
+  "startedAtMs": 1712345678901,
+  "endedAtMs": 1712345689000,
+  "sampleCount": 502,
+  "avgAccelMagnitude": 9.82,
+  "peakGyroMagnitude": 123.4,
+  "packetVersion": 1,
+  "packetSize": 16,
+  "samplesBase64": "AX4u2A…"
+}
+```
+
+- `samplesBase64` is the concatenation of the raw IMU Data packets (§4) in
+  capture order, base64-encoded. The central decodes it in 16-byte blocks with
+  the normal packet decoder and feeds the result through the shared analysis
+  pipeline — identical to live streaming, just batched.
+- The metadata fields (`sampleCount`, `avgAccelMagnitude`, `peakGyroMagnitude`,
+  `startedAtMs`/`endedAtMs`) let a client list sessions without decoding blobs.
+- `avgAccelMagnitude` is the RMS of |a| (m/s², includes gravity); `peakGyroMagnitude`
+  is the max |ω| (deg/s) across the session.
+
+The BLE transfer channel (a session-data characteristic + list/request commands)
+is a planned addition — see `ROADMAP.md` Phase D. Until then, sessions are read
+directly from the peripheral's storage.
+
+Wear OS reference: `wearos/app/src/main/java/com/precpet/wearos/session/`
+(`SessionRecorder.kt` captures, `SessionStore.kt` persists, `SessionModels.kt`
+defines the shape).

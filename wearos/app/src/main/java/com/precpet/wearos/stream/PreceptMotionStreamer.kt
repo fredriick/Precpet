@@ -8,6 +8,7 @@ import android.hardware.SensorManager
 import android.util.Log
 import com.precpet.wearos.ble.PreceptBleServer
 import com.precpet.wearos.protocol.PreceptMotionProtocol
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Owns the accelerometer/gyroscope stream and fans each sample out to the
@@ -23,6 +24,21 @@ object PreceptMotionStreamer : SensorEventListener {
 
     @Volatile
     var bleServer: PreceptBleServer? = null
+
+    private val packetListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
+
+    /**
+     * Additional sinks for every encoded packet (e.g. [SessionRecorder] for
+     * phone-free offline capture). Listeners are invoked on the sensor
+     * callback thread; keep them fast.
+     */
+    fun addPacketListener(listener: (ByteArray) -> Unit) {
+        if (!packetListeners.contains(listener)) packetListeners.add(listener)
+    }
+
+    fun removePacketListener(listener: (ByteArray) -> Unit) {
+        packetListeners.remove(listener)
+    }
 
     /** Packets encoded since the stream started (surfaced in the watch UI). */
     @Volatile
@@ -83,6 +99,7 @@ object PreceptMotionStreamer : SensorEventListener {
                     Log.d(TAG, "packet #${packetsEncoded} (${packet.joinToString("") { "%02x".format(it) }})")
                 }
                 bleServer?.sendSample(packet)
+                packetListeners.forEach { listener -> listener(packet) }
             }
         }
     }

@@ -73,9 +73,18 @@ their watch while the phone stays in a bag on the sideline.
     the same protocol.
 
 - **Phase D — Phone-free offline sessions**
-  - The watch app runs the full session on-device (timer, reps, sensor
-    capture) and syncs results via the Wearable Data Layer when the phone
-    reconnects.
+  - ✅ **On-device capture + storage:** the Wear OS app now has a **Record
+    offline** mode — `SessionRecorder` + `SessionStore` (`wearos/.../session/`)
+    capture the same 50 Hz IMU packets, compute a summary (RMS accel, peak gyro,
+    duration, sample count), and persist one JSON file per session
+    (`docs/wearable-protocol.md` §12). Fully unit-tested (17 tests) and works
+    with no phone nearby.
+  - ⏳ **On-device session UX:** timer + sample counter shipped; rep counting
+    and on-watch summary screens are future.
+  - ⏳ **BLE upload + PWA import:** transmit stored sessions to the PWA over the
+    service and merge them into practice history. This is the next milestone —
+    the JSON payload format is already specified (§12) so the watch files and
+    the future transfer channel share one shape.
 
 ### Cross-cutting (shipped)
 

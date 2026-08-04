@@ -11,7 +11,7 @@ apps that emit the same protocol.
 
 ## How it works
 
-1. Open the watch app and press **Start** (or just let the watch stream).
+1. Open the watch app and press **Stream to phone** (or just let the watch stream).
 2. The app runs a foreground service that:
    - reads `TYPE_ACCELEROMETER` + `TYPE_GYROSCOPE` at ~50 Hz,
    - encodes each sample into the 16-byte little-endian IMU packet,
@@ -21,6 +21,18 @@ apps that emit the same protocol.
    and streams fluidity scores live.
 
 BLE range is ~10 m — keep the phone on the sideline, in a bag, or an armband.
+
+## Phone-free offline recording
+
+Press **Record offline** and the watch captures a full session **on-device**
+with no phone nearby: same 50 Hz IMU packets, a live timer, and a sample counter.
+Pressing **Save & stop** writes one JSON file per session to the watch's
+internal `sessions/` directory — raw 16-byte packets base64-encoded, exactly
+the format the PWA will decode with its normal packet decoder (see
+`docs/wearable-protocol.md` §12). The watch UI shows how many sessions are saved.
+
+The BLE upload of saved sessions to the PWA is the next milestone (Phase D in
+`ROADMAP.md`); for now sessions live on the watch.
 
 ## Build
 
@@ -49,17 +61,24 @@ a Wear OS emulator or watch:
 16-byte packets as the TypeScript reference encoder (`tests/lib/wearable-protocol.test.ts`)
 for the same sample values — the cross-language byte-parity contract.
 
+`SessionRecorderTest` + `SessionStoreTest` cover phone-free capture: packet
+round-trips, RMS-accel / peak-gyro summaries, JSON persistence round-trips,
+delete/clear, and corrupt-file resilience. 17 tests total.
+
 ### Emulator (Wear OS AVD)
 
 The Android emulator has **no Bluetooth radio**, so the BLE link itself can't be
 exercised — but everything before it can:
 
 1. Create a Wear OS 4 AVD (API 34) and run the app.
-2. Tap **Start** (grant the BLE + foreground-service permissions when prompted).
+2. Tap **Start** or **Record offline** (grant the BLE + foreground-service
+   permissions when prompted).
 3. Open `Extended Controls → Virtual Sensors → Device Pose` and drag the
    X/Y/Z sliders to feed synthetic accelerometer/gyroscope data.
 4. Watch the UI counter **Encoded: N packets** climb (~50/s), and confirm
    `logcat` shows throttled `PreceptMotion` packet hex dumps.
+5. To exercise offline capture: tap **Record offline**, wait a few seconds,
+   then **Save & stop** — the screen shows "Saved N sessions".
 5. The watch also logs "No BLE advertiser … no Bluetooth radio" — **expected**
    on an emulator, not an error.
 
@@ -77,12 +96,17 @@ hardware (below).
 
 ```
 app/src/main/java/com/precpet/wearos/
-├── MainActivity.kt            # Wear Compose start/stop screen + packet counter
+├── MainActivity.kt            # Wear Compose screen: stream / record-offline modes
 ├── protocol/PreceptMotionProtocol.kt   # packet encode + UUIDs (mirror of docs)
 ├── ble/PreceptBleServer.kt    # GATT server + advertising + command handling
 ├── sensor/MotionSensorService.kt       # foreground service
-└── stream/PreceptMotionStreamer.kt     # sensor fan-out to connected phones
+├── session/SessionRecorder.kt # on-device offline capture (pure JVM)
+├── session/SessionStore.kt    # JSON persistence (org.json) + listing
+├── session/SessionModels.kt   # session summary + stored-session shape
+└── stream/PreceptMotionStreamer.kt     # sensor fan-out → BLE + packet listeners
 
-app/src/test/java/com/precpet/wearos/protocol/
-└── PreceptMotionProtocolTest.kt        # byte-parity vs the TS reference encoder
+app/src/test/java/com/precpet/wearos/
+├── protocol/PreceptMotionProtocolTest.kt   # byte-parity vs the TS encoder
+└── session/SessionRecorderTest.kt          # capture/summary/base64 round-trip
+└── session/SessionStoreTest.kt             # JSON persistence + corrupt files
 ```
