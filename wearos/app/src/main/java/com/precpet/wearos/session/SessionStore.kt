@@ -28,6 +28,40 @@ class SessionStore(private val dir: File) {
         File(dir, session.summary.id + JSON_SUFFIX).writeText(toJson(session))
     }
 
+    /**
+     * The on-watch JSON for one session — the exact payload the PWA consumes
+     * over the Session Data channel (§12). Shared by the file store and the
+     * BLE server so the disk format and the transfer format are identical.
+     */
+    fun toJson(session: StoredSession): String = JSONObject()
+        .put("v", 1)
+        .put("id", session.summary.id)
+        .put("startedAtMs", session.summary.startedAtMs)
+        .put("endedAtMs", session.summary.endedAtMs)
+        .put("sampleCount", session.summary.sampleCount)
+        .put("avgAccelMagnitude", session.summary.avgAccelMagnitude)
+        .put("peakGyroMagnitude", session.summary.peakGyroMagnitude)
+        .put("packetVersion", session.packetVersion)
+        .put("packetSize", session.packetSize)
+        .put("samplesBase64", session.samplesBase64)
+        .toString()
+
+    /** The List Sessions response: {"v":1,"sessions":[...]} with 0-based indexes. */
+    fun listJson(): String {
+        val arr = org.json.JSONArray()
+        list().forEachIndexed { index, s ->
+            arr.put(JSONObject()
+                .put("index", index)
+                .put("id", s.id)
+                .put("startedAtMs", s.startedAtMs)
+                .put("endedAtMs", s.endedAtMs)
+                .put("sampleCount", s.sampleCount)
+                .put("avgAccelMagnitude", s.avgAccelMagnitude)
+                .put("peakGyroMagnitude", s.peakGyroMagnitude))
+        }
+        return JSONObject().put("v", 1).put("sessions", arr).toString()
+    }
+
     fun load(id: String): StoredSession? {
         val file = File(dir, id + JSON_SUFFIX)
         if (!file.isFile) return null
@@ -72,19 +106,6 @@ class SessionStore(private val dir: File) {
     } catch (_: Exception) {
         null
     }
-
-    private fun toJson(session: StoredSession): String = JSONObject()
-        .put("v", 1)
-        .put("id", session.summary.id)
-        .put("startedAtMs", session.summary.startedAtMs)
-        .put("endedAtMs", session.summary.endedAtMs)
-        .put("sampleCount", session.summary.sampleCount)
-        .put("avgAccelMagnitude", session.summary.avgAccelMagnitude)
-        .put("peakGyroMagnitude", session.summary.peakGyroMagnitude)
-        .put("packetVersion", session.packetVersion)
-        .put("packetSize", session.packetSize)
-        .put("samplesBase64", session.samplesBase64)
-        .toString()
 
     companion object {
         private const val JSON_SUFFIX = ".json"

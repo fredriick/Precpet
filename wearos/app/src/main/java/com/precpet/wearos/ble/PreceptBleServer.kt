@@ -14,28 +14,50 @@ import android.bluetooth.le.AdvertiseSettings
 import android.bluetooth.le.BluetoothLeAdvertiser
 import android.content.Context
 import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import com.precpet.wearos.protocol.PreceptMotionProtocol
+import com.precpet.wearos.session.SessionChunker
+import com.precpet.wearos.session.SessionStore
 import com.precpet.wearos.stream.PreceptMotionStreamer
 
 /**
  * BLE GATT server that advertises the Precept Motion Service and fans IMU
- * notifications out to connected phones/PWAs.
+ * notifications out to connected phones/PWAs. Also serves on-device offline
+ * sessions (docs/wearable-protocol.md §12) over the Session Data channel.
  */
-class PreceptBleServer(private val context: Context) {
+class PreceptBleServer(
+    private val context: Context,
+    private val sessionStore: SessionStore,
+) {
     companion object {
         private const val TAG = "PreceptBleServer"
+        private const val DEFAULT_ATT_MTU = 23
+        // One notification per tick keeps the BLE stack happy even at 20-byte
+        // MTUs; higher negotiated MTUs move the same message in fewer chunks.
+        private const val CHUNK_INTERVAL_MS = 12L
+        private const val OK_JSON = """{"ok":true}"""
+        private const val ERROR_JSON = """{"ok":false}"""
     }
 
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    private val handler = Handler(Looper.getMainLooper())
     private var gattServer: BluetoothGattServer? = null
     private var advertiser: BluetoothLeAdvertiser? = null
 
     private var imuCharacteristic: BluetoothGattCharacteristic? = null
     private var timeSyncCharacteristic: BluetoothGattCharacteristic? = null
+    private var sessionDataCharacteristic: BluetoothGattCharacteristic? = null
+
+    @Volatile
+    private var negotiatedMtu = DEFAULT_ATT_MTU
 
     private val connectedDevices = mutableSetOf<BluetoothDevice>()
+
+    private var sessionBusy = false
+    private var sessionTick: Runnable? = null
 
     private val batteryLevel: Int
         get() {
@@ -74,10 +96,16 @@ class PreceptBleServer(private val context: Context) {
                 BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 BluetoothGattCharacteristic.PERMISSION_WRITE,
             )
+            sessionDataCharacteristic = BluetoothGattCharacteristic(
+                PreceptMotionProtocol.SESSION_DATA_CHARACTERISTIC_UUID_OBJ,
+                BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                0,
+            )
             service.addCharacteristic(imuCharacteristic)
             service.addCharacteristic(commandCharacteristic)
             service.addCharacteristic(batteryCharacteristic)
             service.addCharacteristic(timeSyncCharacteristic)
+            service.addCharacteristic(sessionDataCharacteristic)
             addService(service)
         }
 
@@ -114,6 +142,7 @@ class PreceptBleServer(private val context: Context) {
     }
 
     fun stop() {
+        cancelSessionTransfer()
         try {
             advertiser?.stopAdvertising(advertiseCallback)
         } catch (_: Exception) {
@@ -126,6 +155,58 @@ class PreceptBleServer(private val context: Context) {
         advertiser = null
         connectedDevices.clear()
         PreceptMotionStreamer.bleServer = null
+    }
+
+    private fun cancelSessionTransfer() {
+        sessionBusy = false
+        sessionTick?.let(handler::removeCallbacks)
+        sessionTick = null
+    }
+
+    private fun maxSessionFragment(): Int = (negotiatedMtu - 4).coerceAtLeast(1)
+
+    /**
+     * Paced, one-chunk-per-tick delivery of a Session Data message so the
+     * notification queue never overflows at any MTU.
+     */
+    private fun startSessionTransfer(device: BluetoothDevice, message: ByteArray) {
+        if (sessionBusy) {
+            Log.w(TAG, "Session transfer already in progress; ignoring request")
+            return
+        }
+        val characteristic = sessionDataCharacteristic ?: run {
+            Log.w(TAG, "Session data characteristic unavailable")
+            return
+        }
+        val chunks = SessionChunker.chunk(message, maxSessionFragment())
+        sessionBusy = true
+        var index = 0
+        val tick = object : Runnable {
+            override fun run() {
+                if (index >= chunks.size) {
+                    sessionBusy = false
+                    sessionTick = null
+                    return
+                }
+                characteristic.value = chunks[index]
+                gattServer?.notifyCharacteristicChanged(device, characteristic, false)
+                index++
+                if (index < chunks.size) {
+                    handler.postDelayed(this, CHUNK_INTERVAL_MS)
+                } else {
+                    sessionBusy = false
+                    sessionTick = null
+                }
+            }
+        }
+        sessionTick = tick
+        handler.post(tick)
+    }
+
+    private fun sendSessionError(device: BluetoothDevice, message: String) {
+        val characteristic = sessionDataCharacteristic ?: return
+        characteristic.value = SessionChunker.errorChunk(message.toByteArray(Charsets.UTF_8), maxSessionFragment())
+        gattServer?.notifyCharacteristicChanged(device, characteristic, false)
     }
 
     private val advertiseCallback = object : AdvertiseCallback() {
@@ -147,10 +228,16 @@ class PreceptBleServer(private val context: Context) {
                 }
                 android.bluetooth.BluetoothProfile.STATE_DISCONNECTED -> {
                     synchronized(connectedDevices) { connectedDevices.remove(device) }
+                    cancelSessionTransfer()
                     PreceptMotionStreamer.stop()
                     Log.i(TAG, "Disconnected: ${device.address}")
                 }
             }
+        }
+
+        override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
+            negotiatedMtu = mtu.coerceAtLeast(DEFAULT_ATT_MTU)
+            Log.i(TAG, "MTU negotiated: $mtu")
         }
 
         override fun onCharacteristicReadRequest(
@@ -178,7 +265,7 @@ class PreceptBleServer(private val context: Context) {
             value: ByteArray?,
         ) {
             when (characteristic.uuid) {
-                PreceptMotionProtocol.COMMAND_CHARACTERISTIC_UUID_OBJ -> handleCommand(value)
+                PreceptMotionProtocol.COMMAND_CHARACTERISTIC_UUID_OBJ -> handleCommand(device, value)
                 PreceptMotionProtocol.TIME_SYNC_CHARACTERISTIC_UUID_OBJ -> handleTimeSync(device, requestId, value)
             }
             if (responseNeeded) {
@@ -191,13 +278,37 @@ class PreceptBleServer(private val context: Context) {
         }
     }
 
-    private fun handleCommand(value: ByteArray?) {
+    private fun handleCommand(device: BluetoothDevice, value: ByteArray?) {
         val command = value?.firstOrNull()?.toInt()?.and(0xff) ?: return
         when (command) {
             PreceptMotionProtocol.COMMAND_START -> PreceptMotionStreamer.start(context.applicationContext)
             PreceptMotionProtocol.COMMAND_STOP -> PreceptMotionStreamer.stop()
             PreceptMotionProtocol.COMMAND_SET_RATE -> Log.i(TAG, "Set-rate command received (rate switching not yet implemented)")
+            PreceptMotionProtocol.COMMAND_LIST_SESSIONS -> startSessionTransfer(device, sessionStore.listJson().toByteArray(Charsets.UTF_8))
+            PreceptMotionProtocol.COMMAND_REQUEST_SESSION -> handleRequestSession(device, value)
+            PreceptMotionProtocol.COMMAND_DELETE_SESSION -> handleDeleteSession(device, value)
+            PreceptMotionProtocol.COMMAND_DELETE_ALL -> {
+                sessionStore.clear()
+                startSessionTransfer(device, OK_JSON.toByteArray(Charsets.UTF_8))
+            }
         }
+    }
+
+    private fun handleRequestSession(device: BluetoothDevice, value: ByteArray?) {
+        val index = value?.getOrNull(1)?.toInt()?.and(0xff) ?: return
+        val session = sessionStore.list().getOrNull(index)?.let { sessionStore.load(it.id) }
+        if (session == null) {
+            sendSessionError(device, "session not found")
+            return
+        }
+        startSessionTransfer(device, sessionStore.toJson(session).toByteArray(Charsets.UTF_8))
+    }
+
+    private fun handleDeleteSession(device: BluetoothDevice, value: ByteArray?) {
+        val index = value?.getOrNull(1)?.toInt()?.and(0xff) ?: return
+        val id = sessionStore.list().getOrNull(index)?.id
+        val deleted = id != null && sessionStore.delete(id)
+        startSessionTransfer(device, (if (deleted) OK_JSON else ERROR_JSON).toByteArray(Charsets.UTF_8))
     }
 
     private fun handleTimeSync(device: BluetoothDevice, requestId: Int, value: ByteArray?) {

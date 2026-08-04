@@ -16,10 +16,23 @@ import {
   PRECEPT_IMU_CHARACTERISTIC_UUID,
   PRECEPT_COMMAND_CHARACTERISTIC_UUID,
   PRECEPT_BATTERY_CHARACTERISTIC_UUID,
+  PRECEPT_SESSION_DATA_CHARACTERISTIC_UUID,
   buildCommandPacket,
+  buildSessionIndexJson,
+  bytesToBase64,
   encodeImuPacket,
+  parseSessionIndex,
+  parseStoredSession,
+  SessionChunkAssembler,
   COMMAND_START,
   COMMAND_STOP,
+  COMMAND_LIST_SESSIONS,
+  COMMAND_REQUEST_SESSION,
+  COMMAND_DELETE_SESSION,
+  COMMAND_DELETE_ALL,
+  SESSION_TRANSFER_TIMEOUT_MS,
+  type WearableSessionSummary,
+  type WearableStoredSession,
 } from "@/lib/wearable-protocol"
 
 export type WearableConnectionStatus =
@@ -34,6 +47,13 @@ export type WearableConnectionStatus =
 export interface WearableError {
   name: string
   message: string
+}
+
+/** Pending single-transfer session resolver (one transfer at a time). */
+type SessionResolver = {
+  resolve: (text: string) => void
+  reject: (e: Error) => void
+  timer: ReturnType<typeof setTimeout>
 }
 
 export interface WearableConnectResult {
@@ -63,6 +83,24 @@ export interface WearableTransport {
   stop(): void
   /** Tear down listeners/connections (unmount). */
   cleanup(): void
+}
+
+/**
+ * Optional capability: read/delete the peripheral's on-device offline sessions
+ * over the Session Data channel (docs/wearable-protocol.md §12). Web Bluetooth
+ * and the mock implement it; the iOS native bridge does not yet.
+ */
+export interface WearableSessionSync {
+  listSessions(): Promise<WearableSessionSummary[]>
+  fetchSession(index: number): Promise<WearableStoredSession | null>
+  deleteSession(index: number): Promise<boolean>
+  clearSessions(): Promise<boolean>
+}
+
+export function isWearableSessionSync(
+  transport: WearableTransport,
+): transport is WearableTransport & WearableSessionSync {
+  return typeof (transport as Partial<WearableSessionSync>).listSessions === "function"
 }
 
 export function errorFrom(e: unknown): WearableError {
@@ -96,7 +134,7 @@ export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
 }
 
-class WebBluetoothTransport implements WearableTransport {
+class WebBluetoothTransport implements WearableTransport, WearableSessionSync {
   readonly kind = "web-bluetooth" as const
   readonly isSupported = true
 
@@ -106,6 +144,11 @@ class WebBluetoothTransport implements WearableTransport {
   private commandCharacteristic: BluetoothRemoteGATTCharacteristic | null = null
   private onPacketListener: ((ev: Event) => void) | null = null
   private onDisconnectedListener: ((ev: Event) => void) | null = null
+
+  private sessionCharacteristic: BluetoothRemoteGATTCharacteristic | null = null
+  private sessionListener: ((ev: Event) => void) | null = null
+  private sessionAssembler: SessionChunkAssembler | null = null
+  private sessionResolvers: SessionResolver | null = null
 
   constructor(private readonly host: WearableTransportHost) {}
 
@@ -189,6 +232,9 @@ class WebBluetoothTransport implements WearableTransport {
     if (this.imuCharacteristic && this.onPacketListener) {
       this.imuCharacteristic.removeEventListener("characteristicvaluechanged", this.onPacketListener)
     }
+    if (this.sessionCharacteristic && this.sessionListener) {
+      this.sessionCharacteristic.removeEventListener("characteristicvaluechanged", this.sessionListener)
+    }
     if (this.device && this.onDisconnectedListener) {
       this.device.removeEventListener("gattserverdisconnected", this.onDisconnectedListener)
     }
@@ -197,7 +243,112 @@ class WebBluetoothTransport implements WearableTransport {
     } catch {
       // ignore
     }
+    const pending = this.sessionResolvers
+    if (pending) {
+      clearTimeout(pending.timer)
+      pending.reject(new Error("Watch disconnected during session transfer"))
+    }
     this.clearConnection()
+  }
+
+  // -- Offline session sync (docs/wearable-protocol.md §12) --
+
+  private async ensureSessionChannel(): Promise<BluetoothRemoteGATTCharacteristic | null> {
+    if (this.sessionCharacteristic) return this.sessionCharacteristic
+    const server = this.server
+    if (!server) return null
+    try {
+      const service = await server.getPrimaryService(PRECEPT_SERVICE_UUID)
+      const characteristic = await service.getCharacteristic(PRECEPT_SESSION_DATA_CHARACTERISTIC_UUID)
+      this.sessionCharacteristic = characteristic
+      this.sessionListener = (ev) => {
+        const value = (ev.target as BluetoothRemoteGATTCharacteristic | null)?.value
+        if (!value) return
+        this.handleSessionChunk(new Uint8Array(value.buffer, value.byteOffset, value.byteLength))
+      }
+      characteristic.addEventListener("characteristicvaluechanged", this.sessionListener)
+      await characteristic.startNotifications()
+      return characteristic
+    } catch {
+      return null
+    }
+  }
+
+  private handleSessionChunk(chunk: Uint8Array): void {
+    const pending = this.sessionResolvers
+    if (!pending) return
+    const assembler = this.sessionAssembler ?? (this.sessionAssembler = new SessionChunkAssembler())
+    const result = assembler.push(chunk)
+    if (result.error) {
+      clearTimeout(pending.timer)
+      this.sessionResolvers = null
+      this.sessionAssembler = null
+      pending.reject(new Error(result.error))
+      return
+    }
+    if (result.complete && result.text !== undefined) {
+      clearTimeout(pending.timer)
+      this.sessionResolvers = null
+      this.sessionAssembler = null
+      pending.resolve(result.text)
+    }
+  }
+
+  /** Read the current resolver fresh (avoids CFA narrowing across the guard). */
+  private currentSessionResolver(): SessionResolver | null {
+    return this.sessionResolvers
+  }
+
+  /** Send one session command and resolve with the fully reassembled message. */
+  private async sendSessionCommand(bytes: Uint8Array): Promise<string> {
+    if (!this.commandCharacteristic) throw new Error("Watch not connected")
+    const channel = await this.ensureSessionChannel()
+    if (!channel) throw new Error("Watch not connected")
+    if (this.sessionResolvers) throw new Error("A session transfer is already in progress")
+
+    const message = new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.sessionResolvers = null
+        this.sessionAssembler = null
+        reject(new Error("Session transfer timed out"))
+      }, SESSION_TRANSFER_TIMEOUT_MS)
+      this.sessionResolvers = { resolve, reject, timer }
+    })
+
+    try {
+      await this.commandCharacteristic.writeValueWithoutResponse(bytes)
+    } catch (e) {
+      const pending = this.currentSessionResolver()
+      if (pending) {
+        clearTimeout(pending.timer)
+        this.sessionResolvers = null
+        pending.reject(errorFrom(e))
+      }
+      throw e
+    }
+    return message
+  }
+
+  async listSessions(): Promise<WearableSessionSummary[]> {
+    const text = await this.sendSessionCommand(new Uint8Array([COMMAND_LIST_SESSIONS]))
+    return parseSessionIndex(text) ?? []
+  }
+
+  async fetchSession(index: number): Promise<WearableStoredSession | null> {
+    const text = await this.sendSessionCommand(new Uint8Array([COMMAND_REQUEST_SESSION, index & 0xff]))
+    const session = parseStoredSession(text)
+    if (session) session.summary.index = index
+    return session
+  }
+
+  async deleteSession(index: number): Promise<boolean> {
+    const text = await this.sendSessionCommand(new Uint8Array([COMMAND_DELETE_SESSION, index & 0xff]))
+    return /"ok"\s*:\s*true/.test(text)
+  }
+
+  async clearSessions(): Promise<boolean> {
+    const text = await this.sendSessionCommand(new Uint8Array([COMMAND_DELETE_ALL]))
+    return /"ok"\s*:\s*true/.test(text)
   }
 
   private clearConnection(): void {
@@ -207,6 +358,10 @@ class WebBluetoothTransport implements WearableTransport {
     this.commandCharacteristic = null
     this.onPacketListener = null
     this.onDisconnectedListener = null
+    this.sessionCharacteristic = null
+    this.sessionListener = null
+    this.sessionAssembler = null
+    this.sessionResolvers = null
   }
 }
 
@@ -276,13 +431,15 @@ class NativeBridgeTransport implements WearableTransport {
   }
 }
 
-class MockTransport implements WearableTransport {
+class MockTransport implements WearableTransport, WearableSessionSync {
   readonly kind = "mock" as const
   readonly isSupported = true
 
   private timer: ReturnType<typeof setInterval> | null = null
   private started = false
   private counter = 0
+  private sessions: WearableStoredSession[] = []
+  private cleared = false
 
   constructor(private readonly host: WearableTransportHost) {}
 
@@ -332,6 +489,81 @@ class MockTransport implements WearableTransport {
 
   cleanup(): void {
     this.stop()
+  }
+
+  // -- Offline session sync (mocked so the full flow is testable on desktop) --
+
+  private buildSessions(): WearableStoredSession[] {
+    if (this.cleared) return []
+    if (this.sessions.length > 0) return this.sessions
+    const now = Date.now()
+    this.sessions = [
+      makeMockSession("mock-session-0", now - 3 * 3600_000, 300, 0),
+      makeMockSession("mock-session-1", now - 26 * 3600_000, 120, 1),
+    ]
+    return this.sessions
+  }
+
+  async listSessions(): Promise<WearableSessionSummary[]> {
+    return this.buildSessions().map((s, i) => ({ ...s.summary, index: i }))
+  }
+
+  async fetchSession(index: number): Promise<WearableStoredSession | null> {
+    const session = this.buildSessions()[index]
+    return session ? { ...session, summary: { ...session.summary, index } } : null
+  }
+
+  async deleteSession(index: number): Promise<boolean> {
+    const sessions = this.buildSessions()
+    if (index < 0 || index >= sessions.length) return false
+    sessions.splice(index, 1)
+    return true
+  }
+
+  async clearSessions(): Promise<boolean> {
+    const hadSessions = this.buildSessions().length > 0
+    this.sessions = []
+    this.cleared = true
+    return hadSessions
+  }
+}
+
+function makeMockSession(id: string, startedAtMs: number, sampleCount: number, seed: number): WearableStoredSession {
+  const packets: Uint8Array[] = []
+  for (let t = 0; t < sampleCount; t++) {
+    packets.push(
+      encodeImuPacket({
+        counter: t & 0xffff,
+        acceleration: {
+          x: Math.sin(t * 0.8 + seed) * 2,
+          y: Math.cos(t * 1.04 + seed) * 2,
+          z: 9.8 + Math.sin(t * 0.05 + seed) * 0.5,
+        },
+        rotationRate: {
+          alpha: Math.sin(t * 0.07 + seed) * 30,
+          beta: Math.cos(t * 0.11 + seed) * 25,
+          gamma: Math.sin(t * 0.09 + seed) * 20,
+        },
+      }),
+    )
+  }
+  const flat = new Uint8Array(sampleCount * 16)
+  packets.forEach((packet, i) => flat.set(packet, i * 16))
+  const durationMs = sampleCount * 20
+  return {
+    summary: {
+      index: 0,
+      id,
+      startedAtMs,
+      endedAtMs: startedAtMs + durationMs,
+      sampleCount,
+      avgAccelMagnitude: 9.9,
+      peakGyroMagnitude: 33,
+    },
+    packetVersion: 1,
+    packetSize: 16,
+    samplesBase64: bytesToBase64(flat),
+    sampleRate: 50,
   }
 }
 

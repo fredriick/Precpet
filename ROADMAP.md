@@ -77,14 +77,20 @@ their watch while the phone stays in a bag on the sideline.
     offline** mode — `SessionRecorder` + `SessionStore` (`wearos/.../session/`)
     capture the same 50 Hz IMU packets, compute a summary (RMS accel, peak gyro,
     duration, sample count), and persist one JSON file per session
-    (`docs/wearable-protocol.md` §12). Fully unit-tested (17 tests) and works
+    (`docs/wearable-protocol.md` §12). Fully unit-tested and works
     with no phone nearby.
   - ⏳ **On-device session UX:** timer + sample counter shipped; rep counting
     and on-watch summary screens are future.
-  - ⏳ **BLE upload + PWA import:** transmit stored sessions to the PWA over the
-    service and merge them into practice history. This is the next milestone —
-    the JSON payload format is already specified (§12) so the watch files and
-    the future transfer channel share one shape.
+  - ✅ **BLE upload + PWA import:** the watch now serves stored sessions over a
+    **Session Data** characteristic (chunked, MTU-safe) driven by the `0x10–0x13`
+    session commands; the PWA lists, previews, imports, and deletes them from a
+    new **Offline Sessions** panel and merges each into practice history through
+    the normal `finishSession` path (stats/streaks/achievements/cloud sync).
+    Transfer framing + command tables are specced in
+    `docs/wearable-protocol.md` §12.1. Web Bluetooth + mock transports are wired
+    and unit-tested; the iOS native bridge gains this capability in Phase B.
+  - ⏳ **End-to-end BLE validation** on real hardware (Wear OS watch + Android
+    phone in Chrome, and iPhone via the iOS receiver) once hardware is available.
 
 ### Cross-cutting (shipped)
 

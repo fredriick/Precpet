@@ -31,8 +31,15 @@ internal `sessions/` directory — raw 16-byte packets base64-encoded, exactly
 the format the PWA will decode with its normal packet decoder (see
 `docs/wearable-protocol.md` §12). The watch UI shows how many sessions are saved.
 
-The BLE upload of saved sessions to the PWA is the next milestone (Phase D in
-`ROADMAP.md`); for now sessions live on the watch.
+## Syncing offline sessions to the PWA
+
+The watch also **serves** those saved sessions over BLE: connect the PWA and open
+the **Offline Sessions** panel (Wearable motion source) — it lists what's on the
+watch, and you can import each into practice history (stats/streaks/achievements
+ride the normal path), delete single sessions, or clear all. The transfer uses a
+Session Data characteristic with MTU-safe chunk framing (`docs/wearable-protocol.md` §12.1).
+Sessions stay on the watch until you delete them, so nothing is lost if you
+disconnect mid-sync.
 
 ## Build
 
@@ -61,9 +68,10 @@ a Wear OS emulator or watch:
 16-byte packets as the TypeScript reference encoder (`tests/lib/wearable-protocol.test.ts`)
 for the same sample values — the cross-language byte-parity contract.
 
-`SessionRecorderTest` + `SessionStoreTest` cover phone-free capture: packet
-round-trips, RMS-accel / peak-gyro summaries, JSON persistence round-trips,
-delete/clear, and corrupt-file resilience. 17 tests total.
+`SessionRecorderTest` + `SessionStoreTest` + `SessionChunkerTest` cover
+phone-free capture and transfer framing: packet round-trips, RMS-accel /
+peak-gyro summaries, JSON persistence round-trips, delete/clear, corrupt-file
+resilience, and chunk FIRST/LAST/ERROR flagging. 24 tests total.
 
 ### Emulator (Wear OS AVD)
 

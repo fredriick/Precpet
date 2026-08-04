@@ -60,6 +60,7 @@ export function PracticeContent() {
     duration: false,
   })
   const [showVideoRecorder, setShowVideoRecorder] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
   const { user: authUser } = useAuth()
   const videoAnalysis = useVideoAnalysis(authUser?.id ?? null)
 
@@ -238,6 +239,14 @@ export function PracticeContent() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  const formatDate = (ms: number) =>
+    new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+
+  const formatMinutes = (startMs: number, endMs: number) => {
+    const mins = Math.max(1, Math.round((endMs - startMs) / 60000))
+    return `${mins} min`
+  }
+
   const startPractice = useCallback(async () => {
     if (!currentSkill) {
       setShowSkillPicker(true)
@@ -333,6 +342,41 @@ export function PracticeContent() {
     setCompletedSession(null)
     setNewBests({ avg: false, peak: false, duration: false })
   }, [])
+
+  // Pull a recorded offline session off the watch into practice history.
+  // Stats/streaks/achievements ride finishSession's existing path; the credited
+  // duration is clamped to the recorded time (completePracticeSession stamps
+  // endTime as "now", so we backdate startTime by the recorded duration).
+  const importOfflineSession = useCallback(
+    async (index: number): Promise<void> => {
+      setImportError(null)
+      if (atSessionLimit) {
+        setImportError("Session limit reached (10) — delete an older session to free space.")
+        return
+      }
+      const stored = await wearableMotion.fetchOfflineSession(index)
+      if (!stored) return
+      const metrics = wearableMotion.analyzeOfflineSession(stored)
+
+      const lastSkillId = sessions.find((s) => s.completed && s.sport === activeSport)?.skillId
+      const skill = currentSkill ?? (lastSkillId ? getSkillById(lastSkillId) : null) ?? getSkillsBySport(activeSport)[0]
+      if (!skill) return
+
+      const recordedMs = Math.max(1000, stored.summary.endedAtMs - stored.summary.startedAtMs)
+      const session: PracticeSession = {
+        id: stored.summary.id,
+        skillId: skill.id,
+        sport: skill.sport,
+        startTime: new Date(Date.now() - recordedMs).toISOString(),
+        endTime: new Date().toISOString(),
+        fluidityScores: [Math.round(metrics.fluidityScore)],
+        completed: true,
+        notes: `Imported from watch · ${formatDate(stored.summary.startedAtMs)}`,
+      }
+      finishSession(session, session.fluidityScores)
+    },
+    [atSessionLimit, wearableMotion, currentSkill, sessions, activeSport, finishSession],
+  )
 
   const saveNote = useCallback(() => {
     if (!completedSession) return
@@ -1114,6 +1158,91 @@ export function PracticeContent() {
                 </div>
               )}
             </div>
+
+            {activeMotionSource === "wearable" && (
+              <div className="rounded-2xl bg-card border border-border p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Offline Sessions</h3>
+                  {wearableMotion.hasSessionSync && (
+                    <button
+                      onClick={() => void wearableMotion.syncSessions()}
+                      disabled={wearableMotion.syncingSessions}
+                      className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
+                    >
+                      {wearableMotion.syncingSessions ? "Syncing..." : "Refresh"}
+                    </button>
+                  )}
+                </div>
+
+                {!wearableMotion.hasSessionSync ? (
+                  <p className="text-xs text-muted-foreground">
+                    Sessions recorded on your watch while offline will be synced here. The iPhone app supports this soon —
+                    for now they stay safely on the watch.
+                  </p>
+                ) : wearableMotion.connectionStatus !== "connected" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Connect your watch to see sessions recorded without a phone.
+                  </p>
+                ) : wearableMotion.offlineSessions.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {wearableMotion.syncingSessions
+                      ? "Checking your watch..."
+                      : "No saved sessions on the watch yet. Hit Record offline on the watch, then sync here."}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {atSessionLimit && (
+                      <p className="text-xs text-amber-600">
+                        Session limit reached (10) — imports are paused until you delete an older session.
+                      </p>
+                    )}
+                    {wearableMotion.offlineSessions.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between gap-2 rounded-xl bg-secondary/40 border border-border/60 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate">
+                            {formatDate(s.startedAtMs)} · {formatMinutes(s.startedAtMs, s.endedAtMs)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {s.sampleCount} samples · {s.avgAccelMagnitude.toFixed(1)} m/s²
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => void importOfflineSession(s.index)}
+                            disabled={atSessionLimit || wearableMotion.syncingSessions}
+                            className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
+                          >
+                            Import
+                          </button>
+                          <button
+                            onClick={() => void wearableMotion.deleteOfflineSession(s.index)}
+                            className="text-[11px] font-semibold text-red-500 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {wearableMotion.offlineSessions.length > 1 && (
+                      <button
+                        onClick={() => void wearableMotion.clearOfflineSessions()}
+                        className="text-[11px] font-semibold text-muted-foreground hover:text-red-500 hover:underline"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                    {importError && <p className="text-xs text-red-500">{importError}</p>}
+                  </div>
+                )}
+
+                {wearableMotion.offlineSessionError && (
+                  <p className="text-xs text-red-500 mt-2">{wearableMotion.offlineSessionError}</p>
+                )}
+              </div>
+            )}
 
             {/* Goal Setting */}
             {currentSkill && (

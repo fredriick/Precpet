@@ -7,15 +7,21 @@ import {
   ANALYSIS_WINDOW_MS,
   type MotionData,
   type MotionAnalysis,
+  type MotionMetrics,
 } from "@/lib/motion"
 import { decodeImuPacket } from "@/lib/wearable-protocol"
+import type { WearableSessionSummary, WearableStoredSession } from "@/lib/wearable-protocol"
 import {
   createWearableTransport,
+  isWearableSessionSync,
+  errorFrom,
   type WearableConnectionStatus,
   type WearableError,
   type WearableTransport,
   type WearableTransportHost,
+  type WearableSessionSync,
 } from "@/lib/wearable-transport"
+import { analyzeStoredSession, decodeStoredSession } from "@/lib/stored-session"
 
 export type { WearableConnectionStatus, WearableError } from "@/lib/wearable-transport"
 
@@ -33,6 +39,17 @@ export interface UseWearableMotion {
   disconnect: () => void
   startTracking: () => Promise<boolean>
   stopTracking: () => void
+  // Offline session sync (optional capability — empty on iOS for now).
+  hasSessionSync: boolean
+  syncingSessions: boolean
+  offlineSessions: WearableSessionSummary[]
+  offlineSessionError: string | null
+  syncSessions: () => Promise<WearableSessionSummary[]>
+  fetchOfflineSession: (index: number) => Promise<WearableStoredSession | null>
+  deleteOfflineSession: (index: number) => Promise<boolean>
+  clearOfflineSessions: () => Promise<boolean>
+  decodeOfflineSession: (session: WearableStoredSession) => MotionData[]
+  analyzeOfflineSession: (session: WearableStoredSession) => MotionMetrics
 }
 
 const emptyAnalysis: MotionAnalysis = {
@@ -57,6 +74,9 @@ export function useWearableMotion(options?: { mock?: boolean }): UseWearableMoti
   const [isTracking, setIsTracking] = useState(false)
   const [analysis, setAnalysis] = useState<MotionAnalysis>(emptyAnalysis)
   const [error, setError] = useState<WearableError | null>(null)
+  const [syncingSessions, setSyncingSessions] = useState(false)
+  const [offlineSessions, setOfflineSessions] = useState<WearableSessionSummary[]>([])
+  const [offlineSessionError, setOfflineSessionError] = useState<string | null>(null)
 
   // Decode + analyze a raw 16-byte packet from any transport.
   const handlePacket = useCallback((packet: Uint8Array) => {
@@ -109,7 +129,79 @@ export function useWearableMotion(options?: { mock?: boolean }): UseWearableMoti
   const transportRef = useRef(transport)
   transportRef.current = transport
 
+  const sessionSync = useMemo<WearableTransport & WearableSessionSync | null>(
+    () => (isWearableSessionSync(transport) ? transport : null),
+    [transport],
+  )
+
   const isSupported = transport.isSupported
+
+  const syncSessions = useCallback(async (): Promise<WearableSessionSummary[]> => {
+    if (!sessionSync) {
+      setOfflineSessionError("This device can't sync offline watch sessions yet.")
+      return []
+    }
+    setSyncingSessions(true)
+    setOfflineSessionError(null)
+    try {
+      const list = await sessionSync.listSessions()
+      setOfflineSessions(list)
+      return list
+    } catch (e) {
+      const err = errorFrom(e)
+      setOfflineSessionError(err.message)
+      return []
+    } finally {
+      setSyncingSessions(false)
+    }
+  }, [sessionSync])
+
+  // Pull the saved-session index as soon as a session-syncing watch connects.
+  useEffect(() => {
+    if (connectionStatus === "connected" && sessionSync) {
+      void syncSessions()
+    }
+  }, [connectionStatus, sessionSync, syncSessions])
+
+  const fetchOfflineSession = useCallback(
+    async (index: number): Promise<WearableStoredSession | null> => {
+      if (!sessionSync) return null
+      try {
+        return await sessionSync.fetchSession(index)
+      } catch (e) {
+        setOfflineSessionError(errorFrom(e).message)
+        return null
+      }
+    },
+    [sessionSync],
+  )
+
+  const deleteOfflineSession = useCallback(
+    async (index: number): Promise<boolean> => {
+      if (!sessionSync) return false
+      try {
+        const deleted = await sessionSync.deleteSession(index)
+        if (deleted) setOfflineSessions((prev) => prev.filter((s) => s.index !== index).map((s, i) => ({ ...s, index: i })))
+        return deleted
+      } catch (e) {
+        setOfflineSessionError(errorFrom(e).message)
+        return false
+      }
+    },
+    [sessionSync],
+  )
+
+  const clearOfflineSessions = useCallback(async (): Promise<boolean> => {
+    if (!sessionSync) return false
+    try {
+      const cleared = await sessionSync.clearSessions()
+      if (cleared) setOfflineSessions([])
+      return cleared
+    } catch (e) {
+      setOfflineSessionError(errorFrom(e).message)
+      return false
+    }
+  }, [sessionSync])
 
   // Open the device chooser (Web Bluetooth) or native BLE scan (iOS) and
   // subscribe to IMU notifications.
@@ -179,5 +271,15 @@ export function useWearableMotion(options?: { mock?: boolean }): UseWearableMoti
     disconnect,
     startTracking,
     stopTracking,
+    hasSessionSync: sessionSync !== null,
+    syncingSessions,
+    offlineSessions,
+    offlineSessionError,
+    syncSessions,
+    fetchOfflineSession,
+    deleteOfflineSession,
+    clearOfflineSessions,
+    decodeOfflineSession: decodeStoredSession,
+    analyzeOfflineSession: analyzeStoredSession,
   }
 }

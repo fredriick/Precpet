@@ -12,19 +12,20 @@ import android.os.IBinder
 import com.precpet.wearos.MainActivity
 import com.precpet.wearos.R
 import com.precpet.wearos.ble.PreceptBleServer
+import com.precpet.wearos.session.SessionStore
 import com.precpet.wearos.stream.PreceptMotionStreamer
 
 /**
  * Foreground service that keeps the sensor + BLE server alive while the PWA is
- * tracking a session. Started from the watch UI (and can be started remotely by
- * the PWA in a later phase).
+ * tracking a session or the watch is recording offline. Started from the watch
+ * UI (and can be started remotely by the PWA in a later phase).
  */
 class MotionSensorService : Service() {
     private var bleServer: PreceptBleServer? = null
 
     override fun onCreate() {
         super.onCreate()
-        bleServer = PreceptBleServer(this)
+        bleServer = PreceptBleServer(this, SessionStore(sessionsDir(this)))
         bleServer?.start()
         PreceptMotionStreamer.start(this)
     }
@@ -74,5 +75,9 @@ class MotionSensorService : Service() {
     companion object {
         private const val CHANNEL_ID = "precept_motion"
         private const val NOTIFICATION_ID = 1
+
+        /** Shared with the recorder so the disk format == the BLE payload. */
+        fun sessionsDir(context: Context): java.io.File =
+            java.io.File(context.filesDir, "sessions")
     }
 }

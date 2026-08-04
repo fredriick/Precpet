@@ -33,6 +33,7 @@ This document is the source of truth. Reference implementations:
 | Command         | `d5f2a1a2-3f1e-4b6e-9c2e-7f3a8b4c5d6e`  (write, no rsp)  |
 | Battery         | `d5f2a1a3-3f1e-4b6e-9c2e-7f3a8b4c5d6e`  (read + notify)   |
 | Time Sync       | `d5f2a1a4-3f1e-4b6e-9c2e-7f3a8b4c5d6e`  (write + notify)  |
+| Session Data    | `d5f2a1a5-3f1e-4b6e-9c2e-7f3a8b4c5d6e`  (notify)         |
 
 All UUIDs are used in full 128-bit form (no 16-bit aliases).
 
@@ -83,6 +84,10 @@ Single-byte commands with an optional 1-byte payload (2-byte packet):
 | `0x01` | —                | Start streaming          |
 | `0x02` | —                | Stop streaming           |
 | `0x03` | rate: 10/25/50/100 | Set sample rate (Hz). Default 50. Restarts streaming at the new rate if already streaming. |
+| `0x10` | —                | List sessions (§12.1)    |
+| `0x11` | `index`          | Request session `index` (§12.1) |
+| `0x12` | `index`          | Delete session `index` (§12.1) |
+| `0x13` | —                | Delete all sessions (§12.1) |
 
 ## 6. Time Sync (write + notify)
 
@@ -160,10 +165,59 @@ persists to disk and will later upload:
 - `avgAccelMagnitude` is the RMS of |a| (m/s², includes gravity); `peakGyroMagnitude`
   is the max |ω| (deg/s) across the session.
 
-The BLE transfer channel (a session-data characteristic + list/request commands)
-is a planned addition — see `ROADMAP.md` Phase D. Until then, sessions are read
-directly from the peripheral's storage.
+The BLE transfer channel (§12.1 below) uploads these stored sessions to the
+PWA, which merges each one into practice history via the normal
+`finishSession` path (stats, streaks, achievements, and cloud sync all ride the
+existing pipeline).
 
 Wear OS reference: `wearos/app/src/main/java/com/precpet/wearos/session/`
 (`SessionRecorder.kt` captures, `SessionStore.kt` persists, `SessionModels.kt`
-defines the shape).
+defines the shape, `SessionChunker.kt` frames transfer chunks).
+
+### 12.1 Session Data transfer channel
+
+The peripheral exposes the **Session Data** characteristic (notify-only) and
+handles the `0x10`–`0x13` session commands on the Command characteristic. One
+transfer runs at a time; the peripheral ignores a new request while busy.
+
+**List (`0x10`)** — the peripheral replies with the index JSON on Session Data:
+
+```json
+{
+  "v": 1,
+  "sessions": [
+    { "index": 0, "id": "…", "startedAtMs": 1712345678901, "endedAtMs": 1712345689000,
+      "sampleCount": 502, "avgAccelMagnitude": 9.82, "peakGyroMagnitude": 123.4 }
+  ]
+}
+```
+
+Sessions are ordered **most recent first**; `index` is the position in that
+list. Deleting a session re-indexes the remaining ones, so a fresh `List` must
+be requested after any delete.
+
+**Request (`0x11 <index>`)** — the peripheral replies with the stored session
+JSON (§12) for that position, or an error chunk if the index is out of range.
+
+**Delete (`0x12 <index>`) / Delete all (`0x13`)** — the peripheral replies with
+`{"ok":true}` or `{"ok":false}`.
+
+**Chunk framing** — every Session Data notification is
+`[flags uint8][fragment]`, a UTF-8 fragment of one JSON message. The fragment
+size is bounded by `MTU − 4` (1 header byte + 3 ATT header bytes) so the whole
+notification fits any negotiated MTU. Fragments are delivered one per tick
+(~12 ms) to avoid overflowing the notification queue.
+
+| Flag    | Bit  | Meaning                                            |
+| ------- | ---- | -------------------------------------------------- |
+| `0x80`  | 7    | First chunk of a message                           |
+| `0x40`  | 6    | Last chunk of a message                            |
+| `0x20`  | 5    | Error — the fragment is a UTF-8 error message      |
+
+The central assembles fragments into one message, restarting on a first chunk
+and completing on a last chunk. An error chunk aborts the transfer. If no
+message completes within 120 s, the PWA times out and reports an error.
+
+Reference implementations: TS `SessionChunkAssembler` +
+`parseSessionIndex`/`parseStoredSession` (`lib/wearable-protocol.ts`) and
+Kotlin `SessionChunker` (`wearos/.../session/SessionChunker.kt`).
