@@ -13,6 +13,11 @@ interface PreceptBlePlugin {
   connect(): Promise<{ deviceName: string | null; battery: number | null }>
   disconnect(): Promise<void>
   sendCommand(value: string): Promise<void>
+  /** Resolves with `{ json }` = the fully reassembled Session Data message (raw JSON string). */
+  listSessions(): Promise<{ json: string }>
+  fetchSession(index: number): Promise<{ json: string }>
+  deleteSession(index: number): Promise<{ json: string }>
+  clearSessions(): Promise<{ json: string }>
   addListener(eventName: string, listener: (data: PreceptBleEvent) => void): Promise<{ remove: () => void }>
 }
 

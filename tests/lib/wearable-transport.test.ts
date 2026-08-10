@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import {
   createWearableTransport,
+  isWearableSessionSync,
   hexToBytes,
   bytesToHex,
   type WearableTransportHost,
   type WearableTransport,
   type WearableSessionSync,
 } from "@/lib/wearable-transport"
-import { decodeImuPacket, base64ToBytes } from "@/lib/wearable-protocol"
+import {
+  decodeImuPacket,
+  base64ToBytes,
+  buildSessionIndexJson,
+  type WearableSessionSummary,
+} from "@/lib/wearable-protocol"
 
 function makeHost(): { host: WearableTransportHost; packets: Uint8Array[]; statuses: string[] } {
   const packets: Uint8Array[] = []
@@ -139,5 +145,107 @@ describe("MockTransport", () => {
     expect(await transport.clearSessions()).toBe(true)
     expect(await transport.listSessions()).toHaveLength(0)
     expect(await transport.clearSessions()).toBe(false)
+  })
+})
+
+describe("NativeBridgeTransport", () => {
+  const sessions: WearableSessionSummary[] = [
+    {
+      index: 0,
+      id: "s1",
+      startedAtMs: 1000,
+      endedAtMs: 3000,
+      sampleCount: 100,
+      avgAccelMagnitude: 1.2,
+      peakGyroMagnitude: 3.4,
+    },
+  ]
+  const storedSessionJson = JSON.stringify({
+    id: "s1",
+    startedAtMs: 1000,
+    endedAtMs: 3000,
+    sampleCount: 100,
+    avgAccelMagnitude: 1.2,
+    peakGyroMagnitude: 3.4,
+    packetVersion: 1,
+    packetSize: 16,
+    samplesBase64: "AQ==",
+  })
+
+  const plugin = {
+    connect: vi.fn(async () => ({ deviceName: "Precept Watch", battery: 50 })),
+    disconnect: vi.fn(async () => {}),
+    sendCommand: vi.fn(async () => {}),
+    addListener: vi.fn(async () => ({ remove: () => {} })),
+    listSessions: vi.fn(async () => ({ json: buildSessionIndexJson(sessions) })),
+    fetchSession: vi.fn(async () => ({ json: storedSessionJson })),
+    deleteSession: vi.fn(async () => ({ json: '{"ok":true}' })),
+    clearSessions: vi.fn(async () => ({ json: '{"ok":true}' })),
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    ;(window as { Capacitor?: unknown }).Capacitor = { Plugins: { PreceptBle: plugin } }
+  })
+  afterEach(() => {
+    delete (window as { Capacitor?: unknown }).Capacitor
+  })
+
+  it("selects the native-bridge transport when Capacitor is present", () => {
+    const { host } = makeHost()
+    expect(createWearableTransport(host).kind).toBe("native-bridge")
+    expect(isWearableSessionSync(createWearableTransport(host))).toBe(true)
+  })
+
+  it("lists sessions from the plugin", async () => {
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+
+    const list = await transport.listSessions()
+    expect(plugin.listSessions).toHaveBeenCalledOnce()
+    expect(list).toEqual([{ ...sessions[0], index: 0 }])
+  })
+
+  it("maps a malformed list response to an empty list", async () => {
+    plugin.listSessions.mockResolvedValueOnce({ json: "not json" })
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+    expect(await transport.listSessions()).toEqual([])
+  })
+
+  it("fetches a session and stamps the requested index", async () => {
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+
+    const session = await transport.fetchSession(7)
+    expect(plugin.fetchSession).toHaveBeenCalledWith(7)
+    expect(session).not.toBeNull()
+    expect(session!.summary.index).toBe(7)
+    expect(session!.packetSize).toBe(16)
+  })
+
+  it("maps a malformed fetch response to null", async () => {
+    plugin.fetchSession.mockResolvedValueOnce({ json: '{"bad":true}' })
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+    expect(await transport.fetchSession(0)).toBeNull()
+  })
+
+  it("deletes and clears via the plugin, parsing the ok flag", async () => {
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+
+    expect(await transport.deleteSession(2)).toBe(true)
+    expect(plugin.deleteSession).toHaveBeenCalledWith(2)
+
+    expect(await transport.clearSessions()).toBe(true)
+    expect(plugin.clearSessions).toHaveBeenCalledOnce()
+  })
+
+  it("reports false when the plugin returns a failure response", async () => {
+    plugin.deleteSession.mockResolvedValueOnce({ json: '{"ok":false,"error":"no such session"}' })
+    const { host } = makeHost()
+    const transport = createWearableTransport(host) as WearableTransport & WearableSessionSync
+    expect(await transport.deleteSession(9)).toBe(false)
   })
 })

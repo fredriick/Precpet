@@ -21,6 +21,19 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
         static let imu = CBUUID(string: "D5F2A1A1-3F1E-4B6E-9C2E-7F3A8B4C5D6E")
         static let command = CBUUID(string: "D5F2A1A2-3F1E-4B6E-9C2E-7F3A8B4C5D6E")
         static let battery = CBUUID(string: "D5F2A1A3-3F1E-4B6E-9C2E-7F3A8B4C5D6E")
+        static let sessionData = CBUUID(string: "D5F2A1A5-3F1E-4B6E-9C2E-7F3A8B4C5D6E")
+
+        // Offline session commands (docs/wearable-protocol.md §12.1).
+        static let commandListSessions: UInt8 = 0x10
+        static let commandRequestSession: UInt8 = 0x11
+        static let commandDeleteSession: UInt8 = 0x12
+        static let commandDeleteAll: UInt8 = 0x13
+
+        // Session Data chunk framing.
+        static let chunkFlagFirst: UInt8 = 0x80
+        static let chunkFlagLast: UInt8 = 0x40
+        static let chunkFlagError: UInt8 = 0x20
+        static let sessionTimeoutSeconds = 120
     }
 
     private var centralManager: CBCentralManager?
@@ -30,6 +43,14 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
     private var pendingConnectCall: CAPPluginCall?
     private var connectTimeout: DispatchWorkItem?
     private var scanning = false
+
+    // Session Data transfer state (one transfer at a time).
+    private var sessionDataCharacteristic: CBCharacteristic?
+    private var sessionChunks = Data()
+    private var sessionHasFirst = false
+    private var sessionCompletion: ((String) -> Void)?
+    private var sessionErrorHandler: ((Error) -> Void)?
+    private var sessionTimeout: DispatchWorkItem?
 
     override public func load() {
         super.load()
@@ -75,10 +96,75 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
 
     @objc func disconnect(_ call: CAPPluginCall) {
         cancelScan()
+        cancelSessionTransfer()
         if let peripheral {
             centralManager?.cancelPeripheralConnection(peripheral)
         }
         call.resolve()
+    }
+
+    // MARK: - Offline session sync (§12.1)
+
+    @objc func listSessions(_ call: CAPPluginCall) {
+        beginSessionTransfer(command: Data([Precept.commandListSessions]), call: call)
+    }
+
+    @objc func fetchSession(_ call: CAPPluginCall) {
+        guard let index = call.getInt("index"), index >= 0 else {
+            call.reject("Missing session index")
+            return
+        }
+        beginSessionTransfer(command: Data([Precept.commandRequestSession, UInt8(index & 0xff)]), call: call)
+    }
+
+    @objc func deleteSession(_ call: CAPPluginCall) {
+        guard let index = call.getInt("index"), index >= 0 else {
+            call.reject("Missing session index")
+            return
+        }
+        beginSessionTransfer(command: Data([Precept.commandDeleteSession, UInt8(index & 0xff)]), call: call)
+    }
+
+    @objc func clearSessions(_ call: CAPPluginCall) {
+        beginSessionTransfer(command: Data([Precept.commandDeleteAll]), call: call)
+    }
+
+    /// Writes one session command and resolves `{ json }` with the fully
+    /// reassembled Session Data message. One transfer at a time, 120 s timeout.
+    private func beginSessionTransfer(command: Data, call: CAPPluginCall) {
+        guard let peripheral, peripheral.state == .connected, let commandCharacteristic else {
+            call.reject("Not connected to a watch")
+            return
+        }
+        guard sessionDataCharacteristic != nil else {
+            call.reject("Session data characteristic unavailable on the watch")
+            return
+        }
+        guard sessionCompletion == nil else {
+            call.reject("A session transfer is already in progress")
+            return
+        }
+
+        sessionChunks = Data()
+        sessionHasFirst = false
+        call.keepAlive = true
+
+        sessionCompletion = { json in
+            var result = JSObject()
+            result["json"] = json
+            call.resolve(result)
+        }
+        sessionErrorHandler = { error in
+            call.reject(error.localizedDescription)
+        }
+
+        let timeout = DispatchWorkItem { [weak self] in
+            self?.failSessionTransfer(message: "Session transfer timed out")
+        }
+        sessionTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(Precept.sessionTimeoutSeconds), execute: timeout)
+
+        peripheral.writeValue(command, for: commandCharacteristic, type: .withoutResponse)
     }
 
     // MARK: - Scanning / connecting
@@ -144,6 +230,10 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         self.peripheral = nil
         commandCharacteristic = nil
+        sessionDataCharacteristic = nil
+        if sessionCompletion != nil || sessionErrorHandler != nil {
+            finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: "Watch disconnected during session transfer"]))
+        }
         notifyListeners("preceptDisconnected", data: [:])
     }
 
@@ -156,7 +246,7 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
             centralManager?.cancelPeripheralConnection(peripheral)
             return
         }
-        peripheral.discoverCharacteristics([Precept.imu, Precept.command, Precept.battery], for: service)
+        peripheral.discoverCharacteristics([Precept.imu, Precept.command, Precept.battery, Precept.sessionData], for: service)
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
@@ -169,6 +259,9 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
                 commandCharacteristic = characteristic
             case Precept.battery:
                 peripheral.readValue(for: characteristic)
+            case Precept.sessionData:
+                sessionDataCharacteristic = characteristic
+                peripheral.setNotifyValue(true, for: characteristic)
             default:
                 break
             }
@@ -190,6 +283,14 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
 
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard let value = characteristic.value else { return }
+        if characteristic.uuid == Precept.sessionData {
+            if let error {
+                failSessionTransfer(message: error.localizedDescription)
+            } else {
+                handleSessionData(value)
+            }
+            return
+        }
         switch characteristic.uuid {
         case Precept.imu:
             notifyListeners("preceptPacket", data: ["packet": value.hexString])
@@ -200,6 +301,65 @@ public class PreceptBlePlugin: CAPPlugin, CBCentralManagerDelegate, CBPeripheral
         default:
             break
         }
+    }
+
+    // MARK: - Session Data reassembly (§12.1)
+
+    /// Reassembles the chunked Session Data stream (flags byte + fragment),
+    /// then resolves the pending call with the assembled JSON string.
+    private func handleSessionData(_ data: Data) {
+        guard data.count >= 1 else {
+            finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: "Received an empty session chunk"]))
+            return
+        }
+        let flags = data[data.startIndex]
+        let fragment = data.dropFirst()
+
+        if flags & Precept.chunkFlagError != 0 {
+            let message = String(data: Data(fragment), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let text = message.isEmpty ? "Watch reported a session error" : "Watch error: \(message)"
+            finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: text]))
+            return
+        }
+
+        if flags & Precept.chunkFlagFirst != 0 {
+            sessionChunks = Data()
+            sessionHasFirst = true
+        } else if !sessionHasFirst {
+            finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: "Received a session chunk before the first chunk"]))
+            return
+        }
+
+        sessionChunks.append(contentsOf: fragment)
+
+        if flags & Precept.chunkFlagLast != 0 {
+            guard let text = String(data: sessionChunks, encoding: .utf8) else {
+                finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: "Session message was not valid UTF-8"]))
+                return
+            }
+            let completion = sessionCompletion
+            cancelSessionTransfer()
+            completion?(text)
+        }
+    }
+
+    private func failSessionTransfer(message: String) {
+        finishSessionTransfer(error: NSError(domain: "PreceptBle", code: -1, userInfo: [NSLocalizedDescriptionKey: message]))
+    }
+
+    private func finishSessionTransfer(error: Error) {
+        let handler = sessionErrorHandler
+        cancelSessionTransfer()
+        handler?(error)
+    }
+
+    private func cancelSessionTransfer() {
+        sessionTimeout?.cancel()
+        sessionTimeout = nil
+        sessionCompletion = nil
+        sessionErrorHandler = nil
+        sessionChunks = Data()
+        sessionHasFirst = false
     }
 }
 

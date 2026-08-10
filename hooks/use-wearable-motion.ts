@@ -39,7 +39,7 @@ export interface UseWearableMotion {
   disconnect: () => void
   startTracking: () => Promise<boolean>
   stopTracking: () => void
-  // Offline session sync (optional capability — empty on iOS for now).
+  // Offline session sync (optional capability — web-bluetooth, iOS native bridge, mock).
   hasSessionSync: boolean
   syncingSessions: boolean
   offlineSessions: WearableSessionSummary[]

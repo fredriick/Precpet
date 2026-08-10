@@ -12,12 +12,16 @@ It is a native shell around the deployed Precept PWA:
 - A small CoreBluetooth plugin (`PreceptBlePlugin.swift`) provides the one thing
   iOS Safari can't: Bluetooth. It scans for the Precept service UUID, subscribes
   to IMU notifications, and relays each 16-byte packet to the web layer as hex.
+  It also reassembles the chunked Session Data channel (byte framing only) and
+  resolves the JS call with the single assembled JSON message.
 - The PWA's `NativeBridgeTransport` (`lib/wearable-transport.ts`) picks these up
   via `window.Capacitor.Plugins.PreceptBle` and feeds them through the same
-  decode/analyze pipeline as Web Bluetooth on Android.
+  decode/analyze pipeline as Web Bluetooth on Android — including offline session
+  list / fetch / delete.
 
 No protocol logic lives in Swift — the web layer generates command bytes and
-decodes packets, so the two platforms can't drift.
+decodes packets, so the two platforms can't drift (Swift only joins chunk
+fragments back into a UTF-8 string).
 
 ## Prerequisites
 
@@ -51,8 +55,12 @@ open ios/App/App.xcworkspace
 
 | JS call / event | Native | Direction |
 | --- | --- | --- |
-| `connect()` | start scan by service UUID → connect → subscribe IMU | JS → native |
+| `connect()` | start scan by service UUID → connect → subscribe IMU + Session Data | JS → native |
 | `sendCommand("02")` etc. | write command bytes to the command characteristic | JS → native |
+| `listSessions()` → `{ json }` | write `0x10`, reassemble Session Data, resolve with JSON string | JS → native |
+| `fetchSession(index)` → `{ json }` | write `0x11 <index>` → reassemble → resolve with stored-session JSON | JS → native |
+| `deleteSession(index)` → `{ json }` | write `0x12 <index>` → reassemble → resolve `{"ok":…}` | JS → native |
+| `clearSessions()` → `{ json }` | write `0x13` → reassemble → resolve `{"ok":…}` | JS → native |
 | `disconnect()` | cancel connection | JS → native |
 | `preceptPacket` event `{ packet: "01efbe…" }` | 16-byte IMU notification as hex | native → JS |
 | `preceptBattery` event `{ battery: n }` | battery read | native → JS |
@@ -88,7 +96,7 @@ is present (see `createWearableTransport` in `lib/wearable-transport.ts`).
 ios/App/
 ├── App/
 │   ├── AppDelegate.swift          # standard Capacitor template
-│   ├── PreceptBlePlugin.swift     # CoreBluetooth bridge (byte-pipe only)
+│   ├── PreceptBlePlugin.swift     # CoreBluetooth bridge (byte-pipe + chunk reassembly)
 │   └── Info.plist                 # bluetooth usage + bluetooth-central background mode
 ├── App.xcworkspace / App.xcodeproj
 └── Podfile

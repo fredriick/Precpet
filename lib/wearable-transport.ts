@@ -87,8 +87,8 @@ export interface WearableTransport {
 
 /**
  * Optional capability: read/delete the peripheral's on-device offline sessions
- * over the Session Data channel (docs/wearable-protocol.md §12). Web Bluetooth
- * and the mock implement it; the iOS native bridge does not yet.
+ * over the Session Data channel (docs/wearable-protocol.md §12). Web Bluetooth,
+ * the iOS native bridge, and the mock implement it.
  */
 export interface WearableSessionSync {
   listSessions(): Promise<WearableSessionSummary[]>
@@ -365,7 +365,7 @@ class WebBluetoothTransport implements WearableTransport, WearableSessionSync {
   }
 }
 
-class NativeBridgeTransport implements WearableTransport {
+class NativeBridgeTransport implements WearableTransport, WearableSessionSync {
   readonly kind = "native-bridge" as const
   readonly isSupported = true
 
@@ -377,6 +377,28 @@ class NativeBridgeTransport implements WearableTransport {
     const plugin = typeof window !== "undefined" ? window.Capacitor?.Plugins?.PreceptBle : undefined
     if (!plugin) throw new Error("PreceptBle plugin unavailable")
     return plugin
+  }
+
+  private jsonOf(result: { json?: unknown }): string {
+    return typeof result.json === "string" ? result.json : ""
+  }
+
+  async listSessions(): Promise<WearableSessionSummary[]> {
+    return parseSessionIndex(this.jsonOf(await this.plugin.listSessions())) ?? []
+  }
+
+  async fetchSession(index: number): Promise<WearableStoredSession | null> {
+    const session = parseStoredSession(this.jsonOf(await this.plugin.fetchSession(index)))
+    if (session) session.summary.index = index
+    return session
+  }
+
+  async deleteSession(index: number): Promise<boolean> {
+    return /"ok"\s*:\s*true/.test(this.jsonOf(await this.plugin.deleteSession(index)))
+  }
+
+  async clearSessions(): Promise<boolean> {
+    return /"ok"\s*:\s*true/.test(this.jsonOf(await this.plugin.clearSessions()))
   }
 
   async connect(): Promise<WearableConnectResult | null> {
