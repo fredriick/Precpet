@@ -114,6 +114,8 @@ export interface WearableSessionSummary {
   sampleCount: number
   avgAccelMagnitude: number // m/s² RMS (includes gravity)
   peakGyroMagnitude: number // deg/s
+  /** Optional watch-side rep count (§12); undefined when the watch doesn't count reps. */
+  repCount?: number
 }
 
 export interface WearableStoredSession {
@@ -156,6 +158,7 @@ function toSummary(raw: Record<string, unknown>, index: number): WearableSession
   ) {
     return null
   }
+  const repCount = typeof raw.repCount === "number" ? Math.floor(raw.repCount) : undefined
   return {
     index,
     id: raw.id,
@@ -164,6 +167,7 @@ function toSummary(raw: Record<string, unknown>, index: number): WearableSession
     sampleCount: Math.floor(raw.sampleCount),
     avgAccelMagnitude: raw.avgAccelMagnitude,
     peakGyroMagnitude: raw.peakGyroMagnitude,
+    ...(repCount !== undefined ? { repCount } : {}),
   }
 }
 
@@ -222,6 +226,7 @@ export function buildSessionIndexJson(sessions: WearableSessionSummary[]): strin
       sampleCount: s.sampleCount,
       avgAccelMagnitude: s.avgAccelMagnitude,
       peakGyroMagnitude: s.peakGyroMagnitude,
+      ...(s.repCount !== undefined ? { repCount: s.repCount } : {}),
     })),
   })
 }

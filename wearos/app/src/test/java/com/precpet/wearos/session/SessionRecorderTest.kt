@@ -86,4 +86,43 @@ class SessionRecorderTest {
         assertEquals(2, second.summary.sampleCount)
         assertEquals(15.588, second.summary.avgAccelMagnitude, 0.01) // sqrt(3)*9
     }
+
+    @Test
+    fun `counts reps from bursts in the captured stream`() {
+        // Rest = (0,0,9.81) so |a| ≈ gravity; burst pushes z to 14.81 (dev ~5).
+        // Bursts are separated by 15 rest samples (300 ms) > the 250 ms
+        // refractory, so each counts: 3 bursts = 3 reps.
+        val packets = ArrayList<ByteArray>()
+        var counter = 0
+        repeat(3) {
+            repeat(15) { packets.add(imuPacket(counter++, 0f, 0f, 9.81f)) }
+            repeat(10) { packets.add(imuPacket(counter++, 0f, 0f, 14.81f)) }
+        }
+        repeat(15) { packets.add(imuPacket(counter++, 0f, 0f, 9.81f)) }
+
+        SessionRecorder.start()
+        packets.forEach { SessionRecorder.record(it) }
+        assertEquals(3, SessionRecorder.repCount)
+
+        val s = SessionRecorder.finalize()!!
+        assertEquals(3, s.summary.repCount)
+        assertEquals(90, s.summary.sampleCount)
+    }
+
+    @Test
+    fun `rep count resets between sessions`() {
+        SessionRecorder.start()
+        repeat(10) { SessionRecorder.record(imuPacket(it, 0f, 0f, 9.81f)) }
+        repeat(10) { SessionRecorder.record(imuPacket(it, 0f, 0f, 14.81f)) }
+        repeat(15) { SessionRecorder.record(imuPacket(it, 0f, 0f, 9.81f)) }
+        assertEquals(1, SessionRecorder.finalize()!!.summary.repCount)
+
+        SessionRecorder.start()
+        repeat(25) { SessionRecorder.record(imuPacket(it, 0f, 0f, 9.81f)) }
+        assertEquals(0, SessionRecorder.repCount)
+        assertEquals(0, SessionRecorder.finalize()!!.summary.repCount)
+    }
+
+    private fun imuPacket(counter: Int, ax: Float, ay: Float, az: Float): ByteArray =
+        PreceptMotionProtocol.encodeImuPacket(counter, ax, ay, az, 0f, 0f, 0f)
 }

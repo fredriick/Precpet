@@ -1206,6 +1206,7 @@ export function PracticeContent() {
                             {formatDate(s.startedAtMs)} · {formatMinutes(s.startedAtMs, s.endedAtMs)}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
+                            {s.repCount ? `${s.repCount} reps · ` : ""}
                             {s.sampleCount} samples · {s.avgAccelMagnitude.toFixed(1)} m/s²
                           </p>
                         </div>

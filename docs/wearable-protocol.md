@@ -150,6 +150,7 @@ persists to disk and will later upload:
   "sampleCount": 502,
   "avgAccelMagnitude": 9.82,
   "peakGyroMagnitude": 123.4,
+  "repCount": 12,
   "packetVersion": 1,
   "packetSize": 16,
   "samplesBase64": "AX4u2A…"
@@ -164,6 +165,10 @@ persists to disk and will later upload:
   `startedAtMs`/`endedAtMs`) let a client list sessions without decoding blobs.
 - `avgAccelMagnitude` is the RMS of |a| (m/s², includes gravity); `peakGyroMagnitude`
   is the max |ω| (deg/s) across the session.
+- `repCount` is **optional** (watch-side only): a count of movement reps detected
+  on the wrist (gravity-normalized accel bursts; Wear OS reference
+  `RepCounter.kt`). Peripherals that don't count reps omit it; clients must
+  treat a missing value as 0 and ignore the field for analysis.
 
 The BLE transfer channel (§12.1 below) uploads these stored sessions to the
 PWA, which merges each one into practice history via the normal
@@ -172,7 +177,8 @@ existing pipeline).
 
 Wear OS reference: `wearos/app/src/main/java/com/precpet/wearos/session/`
 (`SessionRecorder.kt` captures, `SessionStore.kt` persists, `SessionModels.kt`
-defines the shape, `SessionChunker.kt` frames transfer chunks).
+defines the shape, `SessionChunker.kt` frames transfer chunks, `RepCounter.kt`
+detects the optional `repCount`).
 
 ### 12.1 Session Data transfer channel
 
@@ -187,14 +193,15 @@ transfer runs at a time; the peripheral ignores a new request while busy.
   "v": 1,
   "sessions": [
     { "index": 0, "id": "…", "startedAtMs": 1712345678901, "endedAtMs": 1712345689000,
-      "sampleCount": 502, "avgAccelMagnitude": 9.82, "peakGyroMagnitude": 123.4 }
+      "sampleCount": 502, "avgAccelMagnitude": 9.82, "peakGyroMagnitude": 123.4,
+      "repCount": 12 }
   ]
 }
 ```
 
 Sessions are ordered **most recent first**; `index` is the position in that
-list. Deleting a session re-indexes the remaining ones, so a fresh `List` must
-be requested after any delete.
+list. `repCount` is optional (see §12). Deleting a session re-indexes the
+remaining ones, so a fresh `List` must be requested after any delete.
 
 **Request (`0x11 <index>`)** — the peripheral replies with the stored session
 JSON (§12) for that position, or an error chunk if the index is out of range.

@@ -41,6 +41,7 @@ class SessionStore(private val dir: File) {
         .put("sampleCount", session.summary.sampleCount)
         .put("avgAccelMagnitude", session.summary.avgAccelMagnitude)
         .put("peakGyroMagnitude", session.summary.peakGyroMagnitude)
+        .put("repCount", session.summary.repCount)
         .put("packetVersion", session.packetVersion)
         .put("packetSize", session.packetSize)
         .put("samplesBase64", session.samplesBase64)
@@ -57,7 +58,8 @@ class SessionStore(private val dir: File) {
                 .put("endedAtMs", s.endedAtMs)
                 .put("sampleCount", s.sampleCount)
                 .put("avgAccelMagnitude", s.avgAccelMagnitude)
-                .put("peakGyroMagnitude", s.peakGyroMagnitude))
+                .put("peakGyroMagnitude", s.peakGyroMagnitude)
+                .put("repCount", s.repCount))
         }
         return JSONObject().put("v", 1).put("sessions", arr).toString()
     }
@@ -83,6 +85,7 @@ class SessionStore(private val dir: File) {
             sampleCount = obj.getInt("sampleCount"),
             avgAccelMagnitude = obj.getDouble("avgAccelMagnitude"),
             peakGyroMagnitude = obj.getDouble("peakGyroMagnitude").toFloat(),
+            repCount = obj.optInt("repCount", 0),
         )
     } catch (_: Exception) {
         null
@@ -98,6 +101,7 @@ class SessionStore(private val dir: File) {
                 sampleCount = obj.getInt("sampleCount"),
                 avgAccelMagnitude = obj.getDouble("avgAccelMagnitude"),
                 peakGyroMagnitude = obj.getDouble("peakGyroMagnitude").toFloat(),
+                repCount = obj.optInt("repCount", 0),
             ),
             packetVersion = obj.getInt("packetVersion"),
             packetSize = obj.getInt("packetSize"),

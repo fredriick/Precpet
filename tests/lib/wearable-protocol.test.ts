@@ -118,6 +118,23 @@ describe("wearable protocol", () => {
       expect(parsed).toEqual(summaries)
     })
 
+    it("round-trips an optional repCount and omits it when absent", () => {
+      const withReps: WearableSessionSummary[] = [
+        { index: 0, id: "s1", startedAtMs: 2000, endedAtMs: 4000, sampleCount: 100, avgAccelMagnitude: 9.8, peakGyroMagnitude: 40, repCount: 12 },
+      ]
+      expect(parseSessionIndex(buildSessionIndexJson(withReps))).toEqual(withReps)
+      expect(parseSessionIndex(buildSessionIndexJson(summaries))![0].repCount).toBeUndefined()
+    })
+
+    it("parses repCount from a raw watch index payload", () => {
+      const parsed = parseSessionIndex(
+        '{"v":1,"sessions":[{"index":0,"id":"s1","startedAtMs":2000,"endedAtMs":4000,' +
+          '"sampleCount":100,"avgAccelMagnitude":9.8,"peakGyroMagnitude":40,"repCount":3}]}',
+      )
+      expect(parsed).not.toBeNull()
+      expect(parsed![0].repCount).toBe(3)
+    })
+
     it("rejects a response without a sessions array", () => {
       expect(parseSessionIndex('{"v":1}')).toBeNull()
       expect(parseSessionIndex("not json")).toBeNull()

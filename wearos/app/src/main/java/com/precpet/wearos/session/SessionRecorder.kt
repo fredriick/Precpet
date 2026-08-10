@@ -15,6 +15,9 @@ import java.util.UUID
 object SessionRecorder {
     const val PACKET_VERSION = 0x01
 
+    /** Nominal sensor period used for the rep detector's time base (ms). */
+    private const val SAMPLE_INTERVAL_MS = 20L
+
     @Volatile
     var active: Boolean = false
         private set
@@ -22,10 +25,14 @@ object SessionRecorder {
     var sampleCount: Int = 0
         private set
 
+    /** Live rep count from the on-watch detector (0 until movement is seen). */
+    val repCount: Int get() = repCounter.repCount
+
     private var startedAtMs = 0L
     private var packets = mutableListOf<ByteArray>()
     private var accelSquaresSum = 0.0 // Σ|a|² (m/s²)²
     private var peakGyroSquare = 0f // max |ω|² (deg/s)²
+    private val repCounter = RepCounter()
 
     fun start() {
         if (active) return
@@ -35,6 +42,7 @@ object SessionRecorder {
         accelSquaresSum = 0.0
         peakGyroSquare = 0f
         sampleCount = 0
+        repCounter.reset()
     }
 
     /** Record one encoded IMU packet. No-op unless a session is active. */
@@ -47,6 +55,8 @@ object SessionRecorder {
         val ay = readInt16LE(packet, 5) / 100f
         val az = readInt16LE(packet, 7) / 100f
         accelSquaresSum += ax * ax + ay * ay + az * az
+        val accelMagnitude = Math.sqrt((ax * ax + ay * ay + az * az).toDouble()).toFloat()
+        repCounter.record(accelMagnitude, sampleCount * SAMPLE_INTERVAL_MS)
 
         val gx = readInt16LE(packet, 9) / 10f
         val gy = readInt16LE(packet, 11) / 10f
@@ -85,6 +95,7 @@ object SessionRecorder {
                 sampleCount = capturedCount,
                 avgAccelMagnitude = avgAccel,
                 peakGyroMagnitude = peakGyro,
+                repCount = repCounter.repCount,
             ),
             packetVersion = PACKET_VERSION,
             packetSize = captured.first().size,

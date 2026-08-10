@@ -22,7 +22,7 @@ class SessionStoreTest {
         store = SessionStore(dir)
     }
 
-    private fun session(id: String, count: Int = 4): StoredSession {
+    private fun session(id: String, count: Int = 4, repCount: Int = 7): StoredSession {
         val packets = ArrayList<ByteArray>(count)
         for (i in 0 until count) {
             packets.add(PreceptMotionProtocol.encodeImuPacket(i, 1f, 1f, 1f, 2f, 2f, 2f))
@@ -35,6 +35,7 @@ class SessionStoreTest {
                 sampleCount = count,
                 avgAccelMagnitude = 9.81,
                 peakGyroMagnitude = 3.46f,
+                repCount = repCount,
             ),
             packetVersion = SessionRecorder.PACKET_VERSION,
             packetSize = PreceptMotionProtocol.PACKET_SIZE,
@@ -56,15 +57,38 @@ class SessionStoreTest {
         assertEquals("s1", listed[0].id)
         assertEquals(4, listed[0].sampleCount)
         assertEquals(1000, listed[0].durationMs)
+        assertEquals(7, listed[0].repCount)
 
         val loaded = store.load("s1")
         assertNotNull(loaded)
         assertEquals("s1", loaded!!.summary.id)
         assertEquals(9.81, loaded.summary.avgAccelMagnitude, 0.0001)
         assertEquals(3.46f, loaded.summary.peakGyroMagnitude, 0.001f)
+        assertEquals(7, loaded.summary.repCount)
         assertEquals(1, loaded.packetVersion)
         assertEquals(16, loaded.packetSize)
         assertEquals(4 * 16, Base64.getDecoder().decode(loaded.samplesBase64).size)
+    }
+
+    @Test
+    fun `list json carries rep count to the phone`() {
+        store.save(session("s1", repCount = 3))
+        val json = store.listJson()
+        assertTrue(json.contains("\"repCount\":3"))
+    }
+
+    @Test
+    fun `sessions recorded before rep counting default to zero reps`() {
+        // A session saved by an older build has no repCount key; it must load
+        // as 0 rather than failing.
+        java.io.File(dir, "legacy.json").writeText("""
+            {"v":1,"id":"legacy","startedAtMs":1000,"endedAtMs":2000,"sampleCount":10,
+             "avgAccelMagnitude":9.81,"peakGyroMagnitude":3.4,
+             "packetVersion":1,"packetSize":16,"samplesBase64":"AA=="}
+        """.trimIndent())
+
+        assertEquals(0, store.list().single().repCount)
+        assertEquals(0, store.load("legacy")!!.summary.repCount)
     }
 
     @Test

@@ -79,16 +79,21 @@ their watch while the phone stays in a bag on the sideline.
     duration, sample count), and persist one JSON file per session
     (`docs/wearable-protocol.md` §12). Fully unit-tested and works
     with no phone nearby.
-  - ⏳ **On-device session UX:** timer + sample counter shipped; rep counting
-    and on-watch summary screens are future.
+  - ✅ **On-device session UX:** timer + sample counter + **live rep count**
+    during recording, and a **post-save summary screen** (duration, samples,
+    reps, avg accel, peak gyro, delete). Reps come from a gravity-normalized
+    accelerometer burst detector (`wearos/.../session/RepCounter.kt`), are
+    stored in the session JSON as `repCount` (§12, optional), and surface in the
+    PWA's Offline Sessions panel when present.
   - ✅ **BLE upload + PWA import:** the watch now serves stored sessions over a
     **Session Data** characteristic (chunked, MTU-safe) driven by the `0x10–0x13`
     session commands; the PWA lists, previews, imports, and deletes them from a
     new **Offline Sessions** panel and merges each into practice history through
     the normal `finishSession` path (stats/streaks/achievements/cloud sync).
     Transfer framing + command tables are specced in
-    `docs/wearable-protocol.md` §12.1. Web Bluetooth + mock transports are wired
-    and unit-tested; the iOS native bridge gains this capability in Phase B.
+    `docs/wearable-protocol.md` §12.1. Web Bluetooth, mock, and the **iOS native
+    bridge** transports are all wired (Swift reassembles the chunk stream and
+    resolves with the JSON; the web layer parses it) and unit-tested.
   - ⏳ **End-to-end BLE validation** on real hardware (Wear OS watch + Android
     phone in Chrome, and iPhone via the iOS receiver) once hardware is available.
 

@@ -16,6 +16,7 @@ data class SessionSummary(
     val sampleCount: Int,
     val avgAccelMagnitude: Double, // m/s² (RMS, includes gravity)
     val peakGyroMagnitude: Float, // deg/s
+    val repCount: Int = 0, // on-watch rep detector (§12); 0 = not counted
 ) {
     val durationMs: Long get() = endedAtMs - startedAtMs
 }

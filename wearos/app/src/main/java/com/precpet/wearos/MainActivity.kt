@@ -28,6 +28,7 @@ import androidx.wear.compose.material.Text
 import com.precpet.wearos.sensor.MotionSensorService
 import com.precpet.wearos.session.SessionRecorder
 import com.precpet.wearos.session.SessionStore
+import com.precpet.wearos.session.StoredSession
 import com.precpet.wearos.stream.PreceptMotionStreamer
 import kotlinx.coroutines.delay
 import java.io.File
@@ -47,6 +48,7 @@ private sealed interface WatchMode {
     data object Idle : WatchMode
     data object Streaming : WatchMode
     data class Recording(val startedAtMs: Long) : WatchMode
+    data class Summary(val session: StoredSession) : WatchMode
 }
 
 @Composable
@@ -57,6 +59,7 @@ fun WatchScreen() {
     var encoded by remember { mutableStateOf(0) }
     var elapsedSec by remember { mutableStateOf(0) }
     var samples by remember { mutableStateOf(0) }
+    var reps by remember { mutableStateOf(0) }
     var savedCount by remember { mutableStateOf(0) }
     var lastSaved by remember { mutableStateOf<String?>(null) }
 
@@ -69,6 +72,7 @@ fun WatchScreen() {
             is WatchMode.Recording -> while (mode is WatchMode.Recording) {
                 elapsedSec = ((System.currentTimeMillis() - m.startedAtMs) / 1000).toInt()
                 samples = SessionRecorder.sampleCount
+                reps = SessionRecorder.repCount
                 delay(500)
             }
             WatchMode.Streaming -> while (mode == WatchMode.Streaming) {
@@ -76,6 +80,7 @@ fun WatchScreen() {
                 delay(1000)
             }
             WatchMode.Idle -> Unit
+            is WatchMode.Summary -> Unit
         }
     }
 
@@ -130,6 +135,9 @@ fun WatchScreen() {
                 Text(text = "Recording offline", style = MaterialTheme.typography.body2)
                 Text(text = formatDuration(elapsedSec), style = MaterialTheme.typography.title1)
                 Text(text = "$samples samples", style = MaterialTheme.typography.body2)
+                if (reps > 0) {
+                    Text(text = "$reps reps", style = MaterialTheme.typography.body2)
+                }
                 Text(text = "No phone needed", style = MaterialTheme.typography.body2)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = {
@@ -140,10 +148,35 @@ fun WatchScreen() {
                         store.save(session)
                         savedCount = store.list().size
                         lastSaved = "Saved ${session.summary.durationMs / 1000}s · ${session.summary.sampleCount} samples"
+                        mode = WatchMode.Summary(session)
+                    } else {
+                        mode = WatchMode.Idle
                     }
-                    mode = WatchMode.Idle
                 }) {
                     Text("Save & stop")
+                }
+            }
+
+            is WatchMode.Summary -> {
+                val s = m.session.summary
+                Text(text = "Session saved", style = MaterialTheme.typography.title2)
+                Text(text = formatDuration((s.durationMs / 1000).toInt()), style = MaterialTheme.typography.title1)
+                Text(text = "${s.sampleCount} samples · ${s.repCount} reps", style = MaterialTheme.typography.body2)
+                Text(
+                    text = "Avg %.1f m/s² · peak %d °/s".format(s.avgAccelMagnitude, s.peakGyroMagnitude.toInt()),
+                    style = MaterialTheme.typography.body2,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(onClick = { mode = WatchMode.Idle }) {
+                    Text("Done")
+                }
+                Button(onClick = {
+                    store.delete(m.session.summary.id)
+                    savedCount = store.list().size
+                    lastSaved = null
+                    mode = WatchMode.Idle
+                }) {
+                    Text("Delete")
                 }
             }
         }
