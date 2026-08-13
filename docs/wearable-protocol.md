@@ -7,7 +7,8 @@ app, or a dedicated wrist band.
 
 This document is the source of truth. Reference implementations:
 
-- Peripheral (watch/band): `wearos/` (Wear OS companion app)
+- Peripheral (watch/band): `wearos/` (Wear OS companion app), `watchos/`
+  (Apple Watch companion app — source scaffold, unbuilt)
 - Central (Android/desktop PWA): Web Bluetooth transport in
   `lib/wearable-transport.ts` (`hooks/use-wearable-motion.ts` decodes + analyzes)
 - Central (iOS): `ios/App/App/PreceptBlePlugin.swift` — CoreBluetooth byte-pipe
