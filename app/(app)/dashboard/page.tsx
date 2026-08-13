@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { WeeklyActivityChart } from "@/components/weekly-activity-chart"
 import { PracticeHeatmap } from "@/components/practice-heatmap"
 import { LeaderboardWidget } from "@/components/leaderboard-widget"
+import { ClubLeaderboardCard } from "@/components/club-leaderboard-card"
 import { Button } from "@/components/ui/button"
 import { allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { getDailyTip } from "@/lib/daily-tips"
@@ -497,6 +498,8 @@ export default function HomePage() {
         <PracticeHeatmap sessions={sessions} />
 
         <LeaderboardWidget userMinutes={weekMinutes} userName={user?.name || "You"} sport={preferredSport} />
+
+        <ClubLeaderboardCard userMinutes={weekMinutes} userName={user?.name || "You"} sport={preferredSport} />
 
         {hasBests && (
           <div className="rounded-2xl bg-card border border-border p-5">

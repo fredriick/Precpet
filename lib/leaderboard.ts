@@ -43,6 +43,7 @@ export async function submitAndFetchLeaderboard(
   userMinutes: number,
   userName: string,
   sport?: string,
+  clubId?: string,
   signal?: AbortSignal,
 ): Promise<LeaderboardResult> {
   const response = await fetch("/api/leaderboard", {
@@ -51,7 +52,7 @@ export async function submitAndFetchLeaderboard(
       "Content-Type": "application/json",
       "x-session-token": getOrCreateSessionToken(),
     },
-    body: JSON.stringify({ name: userName, sport, minutes: userMinutes }),
+    body: JSON.stringify({ name: userName, sport, minutes: userMinutes, club: clubId }),
     signal,
   })
 

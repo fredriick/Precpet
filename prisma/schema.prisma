@@ -102,10 +102,96 @@ model LeaderboardEntry {
   sessionToken String   @map("session_token")
   name         String   @default("Anonymous")
   sport        String?
+  clubId       String?  @map("club_id") @db.Uuid
   week         Int
   minutes      Int      @default(0)
   updatedAt    DateTime @default(now()) @map("updated_at")
 
+  club Club? @relation(fields: [clubId], references: [id])
+
   @@unique([sessionToken, week])
   @@map("leaderboard_entries")
+}
+
+model Club {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  members       ClubMember[]
+  leaderboardEntries LeaderboardEntry[]
+  @@map("clubs")
+}
+
+model ClubMember {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clubId       String   @map("club_id") @db.Uuid
+  sessionToken String   @map("session_token")
+  name         String   @default("Anonymous")
+  joinedAt     DateTime @default(now()) @map("joined_at")
+
+  club Club @relation(fields: [clubId], references: [id])
+
+  @@unique([clubId, sessionToken])
+  @@map("club_members")
+}
+
+model PlayerCode {
+  sessionToken String   @id @map("session_token")
+  code         String   @unique
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("player_codes")
+}
+
+model Challenge {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  challengerToken String    @map("challenger_token")
+  challengerName  String    @default("Anonymous") @map("challenger_name")
+  opponentToken   String    @map("opponent_token")
+  opponentName    String    @default("Anonymous") @map("opponent_name")
+  sport           String?
+  status          String    @default("pending")
+  winnerToken     String?   @map("winner_token")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  acceptedAt      DateTime? @map("accepted_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  expiresAt       DateTime  @default(now()) @map("expires_at")
+
+  @@index([challengerToken, status])
+  @@index([opponentToken, status])
+  @@map("challenges")
+}
+
+model DrillAssignment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coachToken String   @map("coach_token")
+  coachName  String   @default("Coach") @map("coach_name")
+  skillId    String   @map("skill_id")
+  skillName  String   @map("skill_name")
+  sport      String?
+  note       String?
+  code       String   @unique
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  claims AssignmentClaim[]
+  @@index([coachToken, createdAt])
+  @@map("drill_assignments")
+}
+
+model AssignmentClaim {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assignmentId String    @map("assignment_id") @db.Uuid
+  athleteToken String    @map("athlete_token")
+  athleteName  String    @default("Anonymous") @map("athlete_name")
+  completed    Boolean   @default(false)
+  claimedAt    DateTime  @default(now()) @map("claimed_at")
+  completedAt  DateTime? @map("completed_at")
+
+  assignment DrillAssignment @relation(fields: [assignmentId], references: [id])
+
+  @@unique([assignmentId, athleteToken])
+  @@index([athleteToken])
+  @@map("assignment_claims")
 }

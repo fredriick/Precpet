@@ -39,7 +39,7 @@ export function LeaderboardWidget({
   useEffect(() => {
     const controller = new AbortController()
     setError(false)
-    submitAndFetchLeaderboard(userMinutes, userName, sport, controller.signal)
+    submitAndFetchLeaderboard(userMinutes, userName, sport, undefined, controller.signal)
       .then((result) => setData(result))
       .catch((err) => {
         if (err?.name !== "AbortError") setError(true)
