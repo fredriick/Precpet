@@ -100,6 +100,7 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
     theme: "dark",
     weeklyGoalMinutes: 60,
     motionSource: "phone",
+    language: "en",
   }
 
   const mergedSettings: UserSettings = settings
@@ -114,6 +115,7 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
         theme: (settings as Record<string, unknown>).theme as UserSettings["theme"],
         weeklyGoalMinutes: (settings as Record<string, unknown>).weekly_goal_minutes as number,
         motionSource: ((settings as Record<string, unknown>).motion_source as UserSettings["motionSource"]) ?? "phone",
+        language: ((settings as Record<string, unknown>).language as UserSettings["language"]) ?? "en",
       }
     : baseSettings
 

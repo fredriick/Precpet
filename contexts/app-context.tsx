@@ -66,6 +66,7 @@ const defaultSettings: UserSettings = {
   theme: "dark",
   weeklyGoalMinutes: 60,
   motionSource: "phone",
+  language: "en",
 }
 
 interface AppContextValue {
@@ -111,10 +112,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSettings(loadedSettings)
     setActiveSportState(loadedSettings.activeSport || loadedSettings.preferredSports?.[0] || "soccer")
     document.documentElement.className = loadedSettings.theme
+    document.documentElement.lang = loadedSettings.language
     setIsOnboarded(hasCompletedOnboarding())
     setIsLoading(false)
     achievementsRef.current = [...getUserStats().achievements]
   }, [])
+
+  // Apply theme + language live on the <html> element.
+  useEffect(() => {
+    document.documentElement.className = settings.theme
+    document.documentElement.lang = settings.language
+  }, [settings.theme, settings.language])
 
   useEffect(() => {
     if (!user) return
@@ -134,6 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSettings(mergedSettings)
         setActiveSportState(mergedSettings.activeSport || mergedSettings.preferredSports?.[0] || "soccer")
         document.documentElement.className = mergedSettings.theme
+        document.documentElement.lang = mergedSettings.language
         achievementsRef.current = [...snapshot.userStats.achievements]
       })
       .catch(() => {

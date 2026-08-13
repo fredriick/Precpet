@@ -42,6 +42,7 @@ export interface UserSettings {
   theme: "dark" | "light"
   weeklyGoalMinutes: number
   motionSource: "phone" | "wearable"
+  language: "en" | "es"
 }
 
 const defaultSettings: UserSettings = {
@@ -55,6 +56,7 @@ const defaultSettings: UserSettings = {
   theme: "dark",
   weeklyGoalMinutes: 60,
   motionSource: "phone",
+  language: "en",
 }
 
 const DATA_VERSION_KEY = "precept_data_version"
