@@ -12,11 +12,13 @@ import { achievements } from "@/lib/achievements-database"
 import { cn } from "@/lib/utils"
 import { LogoutButton } from "@/components/logout-button"
 import { usePaddle } from "@/hooks/use-paddle"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function ProfilePage() {
   const { userStats, settings, updateSettings, sessions, atSessionLimit } = useApp()
   const { user } = useAuth()
   const { loaded: paddleLoaded, openCheckout } = usePaddle()
+  const { t } = useI18n()
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month")
 
   const monthlyPriceId = process.env.NEXT_PUBLIC_PADDLE_MONTHLY_PRICE_ID
@@ -47,8 +49,8 @@ export default function ProfilePage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Profile</h1>
-          <p className="text-muted-foreground text-sm">Your stats and settings</p>
+          <h1 className="text-2xl font-bold mb-1">{t("profile.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("profile.subtitle")}</p>
         </div>
       </header>
 
@@ -67,13 +69,13 @@ export default function ProfilePage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold">{user?.name || "Athlete"}</h2>
+              <h2 className="text-xl font-bold">{user?.name || t("profile.athlete")}</h2>
               <p className="text-muted-foreground text-sm">
-                {learnedSkills}/{totalSkills} skills mastered
+                {t("profile.skillsMastered", { learned: learnedSkills, total: totalSkills })}
               </p>
               {user?.createdAt && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Member since {new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+                  {t("profile.memberSince", { date: new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }) })}
                 </p>
               )}
             </div>
@@ -82,22 +84,22 @@ export default function ProfilePage() {
           <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
             <div>
               <p className="text-2xl font-bold font-mono text-primary">{userStats.practiceMinutes}</p>
-              <p className="text-xs text-muted-foreground">Minutes</p>
+              <p className="text-xs text-muted-foreground">{t("profile.minutes")}</p>
             </div>
             <div>
               <p className="text-2xl font-bold font-mono">{sessions.length}</p>
-              <p className="text-xs text-muted-foreground">Sessions</p>
+              <p className="text-xs text-muted-foreground">{t("profile.sessions")}</p>
             </div>
             <div>
               <p className="text-2xl font-bold font-mono">{userStats.avgFluidityScore}</p>
-              <p className="text-xs text-muted-foreground">Avg Score</p>
+              <p className="text-xs text-muted-foreground">{t("profile.avgScore")}</p>
             </div>
           </div>
         </div>
 
         {/* Streak & Personal Bests */}
         <div className="rounded-2xl bg-card border border-border p-6">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Streak &amp; Bests</h3>
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">{t("profile.streakBests")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center flex-shrink-0">
@@ -108,7 +110,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xl font-bold font-mono">{userStats.currentStreak}</p>
-                <p className="text-xs text-muted-foreground">Current Streak</p>
+                <p className="text-xs text-muted-foreground">{t("profile.currentStreak")}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -119,7 +121,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xl font-bold font-mono">{userStats.longestStreak}</p>
-                <p className="text-xs text-muted-foreground">Longest Streak</p>
+                <p className="text-xs text-muted-foreground">{t("profile.longestStreak")}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -130,7 +132,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xl font-bold font-mono">{bestFluidity}</p>
-                <p className="text-xs text-muted-foreground">Best Fluidity</p>
+                <p className="text-xs text-muted-foreground">{t("profile.bestFluidity")}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -141,7 +143,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xl font-bold font-mono">{longestSessionMin}m</p>
-                <p className="text-xs text-muted-foreground">Longest Session</p>
+                <p className="text-xs text-muted-foreground">{t("profile.longestSession")}</p>
               </div>
             </div>
           </div>
@@ -150,7 +152,7 @@ export default function ProfilePage() {
         {/* Achievements Showcase */}
         <div className="rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Achievements</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("profile.achievements")}</h3>
             <span className="text-xs text-muted-foreground">
               {unlockedAchievements.length}/{achievements.length}
             </span>
@@ -163,53 +165,53 @@ export default function ProfilePage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No achievements yet. Keep practicing to unlock them!
+              {t("profile.noAchievements")}
             </p>
           )}
           <Link href="/progress" className="mt-4 block text-center text-xs text-primary font-medium">
-            View all achievements →
+            {t("profile.viewAllAchievements")}
           </Link>
         </div>
 
         {/* Game Stats */}
         <div className="rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Game Stats</h3>
-            <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI Analyzed</span>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("profile.gameStats")}</h3>
+            <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{t("profile.aiAnalyzed")}</span>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2">
-              <span className="text-muted-foreground">Pass Accuracy</span>
+              <span className="text-muted-foreground">{t("profile.passAccuracy")}</span>
               <span className="font-semibold">{userStats.passAccuracy}%</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-muted-foreground">Successful Dribbles</span>
+              <span className="text-muted-foreground">{t("profile.successfulDribbles")}</span>
               <span className="font-semibold text-primary">{userStats.successfulDribbles}</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-muted-foreground">Shots on Target</span>
+              <span className="text-muted-foreground">{t("profile.shotsOnTarget")}</span>
               <span className="font-semibold">{userStats.shotsOnTarget}</span>
             </div>
           </div>
 
           <p className="text-[10px] text-muted-foreground mt-4 text-center">
-            Values are automatically updated from AI video analysis. Record a session to improve your stats.
+            {t("profile.aiNote")}
           </p>
         </div>
 
         {/* Settings */}
         <div className="rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Settings</h3>
-            <Link href="/settings" className="text-xs text-primary underline">Full settings →</Link>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("profile.settings")}</h3>
+            <Link href="/settings" className="text-xs text-primary underline">{t("profile.fullSettings")}</Link>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Haptic Feedback</p>
-                <p className="text-xs text-muted-foreground">Vibrate during practice</p>
+                <p className="font-medium">{t("profile.haptic")}</p>
+                <p className="text-xs text-muted-foreground">{t("profile.hapticDesc")}</p>
               </div>
               <button
                 onClick={() => updateSettings({ hapticFeedback: !settings.hapticFeedback })}
@@ -229,14 +231,14 @@ export default function ProfilePage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Sound Effects</p>
-                <p className="text-xs text-muted-foreground">Play sounds during sessions</p>
+                <p className="font-medium">{t("profile.soundEffects")}</p>
+                <p className="text-xs text-muted-foreground">{t("profile.soundDesc")}</p>
               </div>
               <button
                 onClick={() => updateSettings({ soundEffects: !settings.soundEffects })}
                 role="switch"
                 aria-checked={settings.soundEffects}
-                aria-label="Toggle sound effects"
+                aria-label={t("profile.toggleSoundEffects")}
                 className={cn(
                   "w-12 h-7 rounded-full transition-colors relative",
                   settings.soundEffects ? "bg-primary" : "bg-secondary",
@@ -253,8 +255,8 @@ export default function ProfilePage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Practice Reminders</p>
-                <p className="text-xs text-muted-foreground">Daily practice notifications</p>
+                <p className="font-medium">{t("profile.reminders")}</p>
+                <p className="text-xs text-muted-foreground">{t("profile.remindersDesc")}</p>
               </div>
               <button
                 onClick={() => updateSettings({ practiceReminders: !settings.practiceReminders })}
@@ -273,7 +275,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <p className="font-medium mb-2">Preferred Difficulty</p>
+              <p className="font-medium mb-2">{t("profile.preferredDifficulty")}</p>
               <div className="flex gap-2 flex-wrap">
                 {(["all", "beginner", "intermediate", "advanced"] as const).map((level) => (
                   <button
@@ -286,7 +288,7 @@ export default function ProfilePage() {
                         : "bg-secondary text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {level === "all" ? "All Levels" : level}
+                    {level === "all" ? t("profile.allLevels") : level}
                   </button>
                 ))}
               </div>
@@ -296,10 +298,10 @@ export default function ProfilePage() {
 
         {/* App Info */}
         <div className="rounded-2xl bg-card border border-border p-6">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">About</h3>
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">{t("profile.about")}</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>Precept v1.0.0</p>
-            <p>AI-powered sports skills coach</p>
+            <p>{t("profile.version")}</p>
+            <p>{t("profile.coachDesc")}</p>
           </div>
         </div>
 
@@ -315,8 +317,8 @@ export default function ProfilePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold">Precept Pro</h3>
-                    <p className="text-xs text-emerald-500 font-medium">Active</p>
+                    <h3 className="font-semibold">{t("profile.pro")}</h3>
+                    <p className="text-xs text-emerald-500 font-medium">{t("profile.active")}</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase">
@@ -324,12 +326,12 @@ export default function ProfilePage() {
                 </span>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Unlimited practice sessions</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>AI-powered video analysis</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Advanced analytics & insights</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Priority support</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.unlimitedSessions")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.aiAnalysis")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.advancedAnalytics")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.prioritySupport")}</li>
               </ul>
-              <p className="text-xs text-muted-foreground">Manage your subscription in the Paddle customer portal.</p>
+              <p className="text-xs text-muted-foreground">{t("profile.manageSub")}</p>
             </>
           ) : (
             <>
@@ -341,8 +343,8 @@ export default function ProfilePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold">Upgrade to Pro</h3>
-                    <p className="text-xs text-muted-foreground">Unlock everything Precept has to offer</p>
+                    <h3 className="font-semibold">{t("profile.upgrade")}</h3>
+                    <p className="text-xs text-muted-foreground">{t("profile.upgradeDesc")}</p>
                   </div>
                 </div>
               </div>
@@ -360,7 +362,7 @@ export default function ProfilePage() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {interval === "month" ? "Monthly" : "Yearly"}
+                    {interval === "month" ? t("profile.monthly") : t("profile.yearly")}
                     {interval === "year" && <span className="ml-1 text-emerald-500">-20%</span>}
                   </button>
                 ))}
@@ -369,14 +371,14 @@ export default function ProfilePage() {
               {/* Pricing */}
               <div className="text-center mb-4">
                 <span className="text-3xl font-bold">{billingInterval === "month" ? "$9" : "$89"}</span>
-                <span className="text-muted-foreground text-sm">/{billingInterval === "month" ? "month" : "year"}</span>
+                <span className="text-muted-foreground text-sm">{billingInterval === "month" ? t("profile.perMonth") : t("profile.perYear")}</span>
               </div>
 
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Unlimited practice sessions</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>AI-powered video analysis</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Advanced analytics & insights</li>
-                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Priority support</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.unlimitedSessions")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.aiAnalysis")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.advancedAnalytics")}</li>
+                <li className="flex items-center gap-2"><svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{t("profile.prioritySupport")}</li>
               </ul>
 
               <Button
@@ -396,10 +398,10 @@ export default function ProfilePage() {
                 className="w-full h-12 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-semibold"
               >
                 {!monthlyPriceId
-                  ? "Pro coming soon"
+                  ? t("profile.comingSoon")
                   : !paddleLoaded
-                    ? "Loading..."
-                    : `Subscribe ${billingInterval === "month" ? "$9/mo" : "$89/yr"}`}
+                    ? t("profile.loading")
+                    : t("profile.subscribe", { price: billingInterval === "month" ? "$9/mo" : "$89/yr" })}
               </Button>
             </>
           )}
@@ -407,7 +409,7 @@ export default function ProfilePage() {
           {/* Session limit */}
           <div className={cn("mt-4 pt-4 border-t border-border")}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Session usage</span>
+              <span className="text-xs text-muted-foreground">{t("profile.sessionUsage")}</span>
               <span className="text-xs font-medium">
                 {sessions.length} / {userStats.isPro ? "∞" : SESSION_LIMIT}
               </span>

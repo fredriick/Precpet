@@ -6,11 +6,13 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { trainingPrograms } from "@/lib/programs-database"
 import { getProgramProgress, resetProgramProgress, initProgramProgress } from "@/lib/storage"
+import { useI18n } from "@/hooks/use-i18n"
 import { cn } from "@/lib/utils"
 
 export default function ProgramDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { t } = useI18n()
   const program = trainingPrograms.find((p) => p.id === id)
   const [progress, setProgress] = useState(() => getProgramProgress(id))
   const [animatingStep, setAnimatingStep] = useState<number | null>(null)
@@ -25,8 +27,8 @@ export default function ProgramDetailPage() {
   if (!program) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-muted-foreground">Program not found</p>
-        <Link href="/practice" className="text-primary underline text-sm">Back to training</Link>
+        <p className="text-muted-foreground">{t("programs.notFound")}</p>
+        <Link href="/practice" className="text-primary underline text-sm">{t("programs.backToTraining")}</Link>
       </div>
     )
   }
@@ -69,7 +71,7 @@ export default function ProgramDetailPage() {
           <div>
             <h1 className="text-lg font-bold truncate">{program.name}</h1>
             <p className="text-xs text-muted-foreground">
-              {total} drills · {program.estimatedMinutes} min
+              {t("practice.drillsMinutes", { count: total, minutes: program.estimatedMinutes })}
             </p>
           </div>
         </div>
@@ -90,7 +92,7 @@ export default function ProgramDetailPage() {
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
-                  Complete
+                  {t("programs.complete")}
                 </span>}
               </div>
               <p className="text-sm text-muted-foreground mt-2">{program.description}</p>
@@ -99,7 +101,7 @@ export default function ProgramDetailPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Overall Progress</span>
+              <span className="text-muted-foreground">{t("programs.overallProgress")}</span>
               <span className="font-mono font-bold text-primary">{completed}/{total}</span>
             </div>
             <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
@@ -110,14 +112,14 @@ export default function ProgramDetailPage() {
             </div>
             {progress?.lastPracticed && (
               <p className="text-xs text-muted-foreground text-right">
-                Last practiced: {new Date(progress.lastPracticed).toLocaleDateString()}
+                {t("programs.lastPracticed", { date: new Date(progress.lastPracticed).toLocaleDateString() })}
               </p>
             )}
           </div>
         </div>
 
         <div>
-          <h2 className="font-semibold mb-3">Drills</h2>
+          <h2 className="font-semibold mb-3">{t("programs.drills")}</h2>
           <div className="space-y-3">
             {program.steps.map((step, i) => {
               const isCompleted = i < completed
@@ -155,7 +157,7 @@ export default function ProgramDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <h3 className="font-medium text-sm">Step {i + 1}</h3>
+                        <h3 className="font-medium text-sm">{t("programs.step", { number: i + 1 })}</h3>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {step.reps}x · {step.duration}s
                         </span>
@@ -182,7 +184,7 @@ export default function ProgramDetailPage() {
               onClick={() => handlePracticeStep(0)}
               className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
             >
-              Start Program
+              {t("programs.start")}
               <svg className="w-5 h-5 inline-block ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
               </svg>
@@ -197,11 +199,11 @@ export default function ProgramDetailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="font-semibold text-emerald-500 mb-1">Program Complete!</p>
+            <p className="font-semibold text-emerald-500 mb-1">{t("programs.completeTitle")}</p>
             <p className="text-sm text-muted-foreground">
               {progress?.completedAt
-                ? `Completed on ${new Date(progress.completedAt).toLocaleDateString()}`
-                : "Great work finishing this program!"}
+                ? t("programs.completedOn", { date: new Date(progress.completedAt).toLocaleDateString() })
+                : t("programs.finishMsg")}
             </p>
             <button
               onClick={() => {
@@ -210,7 +212,7 @@ export default function ProgramDetailPage() {
               }}
               className="mt-3 text-xs text-muted-foreground underline hover:text-foreground"
             >
-              Reset steps to redo
+              {t("programs.resetSteps")}
             </button>
           </div>
         )}

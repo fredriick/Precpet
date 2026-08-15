@@ -14,6 +14,17 @@ describe("translate", () => {
     expect(translate("en", "nav.daysCount", { count: 3 })).toBe("3 days")
     expect(translate("es", "nav.daysCount", { count: 3 })).toBe("3 días")
   })
+
+  it("localizes the migrated content pages", () => {
+    expect(translate("en", "programs.step", { number: 2 })).toBe("Step 2")
+    expect(translate("es", "programs.step", { number: 2 })).toBe("Paso 2")
+    expect(translate("en", "programs.completeTitle")).toBe("Program Complete!")
+    expect(translate("es", "programs.completeTitle")).toBe("¡Programa completado!")
+    expect(translate("en", "export.importData")).toBe("Import Data")
+    expect(translate("es", "export.importData")).toBe("Importar datos")
+    expect(translate("en", "dashboard.you")).toBe("You")
+    expect(translate("es", "dashboard.you")).toBe("Tú")
+  })
 })
 
 describe("dictionary integrity", () => {

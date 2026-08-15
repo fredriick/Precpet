@@ -8,6 +8,7 @@ import { StreakWidget } from "@/components/streak-widget"
 import { FluidityTrendChart } from "@/components/fluidity-trend-chart"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
+import { useI18n } from "@/hooks/use-i18n"
 import { achievements } from "@/lib/achievements-database"
 import { allSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
@@ -16,17 +17,18 @@ import type { Sport } from "@/lib/types"
 type Tab = "stats" | "achievements" | "history"
 type SportFilter = Sport | "all"
 
-const sportLabels: Record<Sport, string> = {
-  soccer: "Soccer",
-  basketball: "Basketball",
-  tennis: "Tennis",
-}
-
 export default function ProgressPage() {
   const { userStats, sessions, settings, activeSport } = useApp()
   const { user } = useAuth()
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<Tab>("stats")
   const [historyFilter, setHistoryFilter] = useState<SportFilter>("all")
+
+  const sportLabels: Record<Sport, string> = {
+    soccer: t("sport.soccer"),
+    basketball: t("sport.basketball"),
+    tennis: t("sport.tennis"),
+  }
 
   const preferredSport = activeSport
 
@@ -68,17 +70,17 @@ export default function ProgressPage() {
 
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="px-4 py-4 max-w-lg md:max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Your Journey</h1>
-          <p className="text-muted-foreground text-xs">Track your progress and celebrate wins</p>
+          <h1 className="text-2xl font-bold mb-1">{t("progress.title")}</h1>
+          <p className="text-muted-foreground text-xs">{t("progress.subtitle")}</p>
         </div>
 
         {/* Tabs */}
         <div className="px-4 pb-0 max-w-lg md:max-w-5xl mx-auto overflow-x-auto scrollbar-hide">
           <div className="flex gap-6 border-b border-transparent">
             {([
-              { id: "stats", label: "Overview" },
-              { id: "achievements", label: "Badges" },
-              { id: "history", label: "History" },
+              { id: "stats", label: t("progress.overview") },
+              { id: "achievements", label: t("progress.badges") },
+              { id: "history", label: t("progress.history") },
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -114,7 +116,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.practiceMinutes}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Minutes Practiced</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.minutesPracticed")}</p>
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
@@ -125,7 +127,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.avgFluidityScore || 0}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Avg Fluidity</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.avgFluidity")}</p>
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
@@ -136,7 +138,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{userStats.skillsLearned.length}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Skills Learned</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.skillsLearned")}</p>
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 hover-lift transition-all">
@@ -147,7 +149,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{sessions.length}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Sessions</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.totalSessions")}</p>
                 </div>
               </div>
             </div>
@@ -163,7 +165,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{bestFluidity || 0}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Best Fluidity</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.bestFluidity")}</p>
                 </div>
               </div>
               {preferredSport === "soccer" && (
@@ -175,7 +177,7 @@ export default function ProgressPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{userStats.passAccuracy || 0}%</p>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Pass Accuracy</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.passAccuracy")}</p>
                   </div>
                 </div>
               )}
@@ -188,7 +190,7 @@ export default function ProgressPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{userStats.shotsOnTarget || 0}</p>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Shots on Target</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.shotsOnTarget")}</p>
                   </div>
                 </div>
               )}
@@ -201,7 +203,7 @@ export default function ProgressPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{userStats.matchesPlayed || 0}</p>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Matches Played</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("progress.matchesPlayed")}</p>
                   </div>
                 </div>
               )}
@@ -209,11 +211,11 @@ export default function ProgressPage() {
 
             {/* Additional Stats Section */}
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Skill Breakdown</h3>
+              <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">{t("progress.skillBreakdown")}</h3>
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Pass Accuracy</span>
+                    <span>{t("progress.passAccuracy")}</span>
                     <span className="font-mono font-medium">{userStats.passAccuracy}%</span>
                   </div>
                   <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -222,7 +224,7 @@ export default function ProgressPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Dribbles</span>
+                    <span>{t("progress.dribbles")}</span>
                     <span className="font-mono font-medium">{userStats.successfulDribbles}</span>
                   </div>
                   <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -239,8 +241,8 @@ export default function ProgressPage() {
         {activeTab === "achievements" && (
           <div className="animate-slide-up space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Unlocked ({unlockedAchievements.length})</h3>
-              <p className="text-xs text-muted-foreground">{Math.round((unlockedAchievements.length / achievements.length) * 100)}% Complete</p>
+              <h3 className="text-lg font-bold">{t("progress.unlocked", { count: unlockedAchievements.length })}</h3>
+              <p className="text-xs text-muted-foreground">{t("progress.complete", { percent: Math.round((unlockedAchievements.length / achievements.length) * 100) })}</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-8 gap-x-4">
@@ -256,7 +258,7 @@ export default function ProgressPage() {
                   <svg className="w-8 h-8 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.896m0 0a6.023 6.023 0 01-2.77-.896m0 0A6.003 6.003 0 015.25 4.236" />
                   </svg>
-                  <p>No badges yet. Start practicing to earn them!</p>
+                  <p>{t("progress.noBadges")}</p>
                 </div>
               )}
             </div>
@@ -264,7 +266,7 @@ export default function ProgressPage() {
             {lockedAchievements.length > 0 && (
               <>
                 <div className="h-px bg-border/50 my-2" />
-                <h3 className="text-lg font-bold opacity-80">Locked ({lockedAchievements.length})</h3>
+                <h3 className="text-lg font-bold opacity-80">{t("progress.locked", { count: lockedAchievements.length })}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-8 gap-x-4 opacity-60 grayscale-[0.5]">
                   {lockedAchievements.map((achievement) => (
                     <AchievementBadge
@@ -293,7 +295,7 @@ export default function ProgressPage() {
                       : "bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
                   )}
                 >
-                  {sport === "all" ? "All Sports" : sportLabels[sport]}
+                  {sport === "all" ? t("progress.allSports") : sportLabels[sport]}
                 </button>
               ))}
             </div>

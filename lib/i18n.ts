@@ -111,6 +111,8 @@ const en = {
   "dashboard.minAgo": "{count}m ago",
   "dashboard.hrAgo": "{count}h ago",
   "dashboard.dayAgo": "{count}d ago",
+  "dashboard.sessionsLabel": "sessions",
+  "dashboard.you": "You",
 
   // ── Progress ────────────────────────────────────────────────────────────
   "progress.title": "Your Journey",
@@ -219,6 +221,41 @@ const en = {
   "profile.loading": "Loading...",
   "profile.subscribe": "Subscribe {price}",
   "profile.sessionUsage": "Session usage",
+  "profile.toggleSoundEffects": "Toggle sound effects",
+
+  // ── Export / data management ────────────────────────────────────────────
+  "export.exportData": "Export Data",
+  "export.exportDesc": "Save your progress by downloading a backup file. Keep it somewhere safe so you can restore it later.",
+  "export.downloadBackup": "Download Backup File",
+  "export.importData": "Import Data",
+  "export.importDesc": "Upload your backup file, or paste the exported data below to restore your progress.",
+  "export.chooseBackup": "Choose Backup File",
+  "export.pastePlaceholder": "Paste your JSON data here...",
+  "export.dangerZone": "Danger Zone",
+  "export.dangerZoneDesc": "Delete all your data and start fresh. This action is irreversible.",
+  "export.resetAllData": "Reset All Data",
+  "export.downloaded": "File downloaded! Keep it safe.",
+  "export.fileLoaded": "File loaded. Click Import Data to restore.",
+  "export.readError": "Could not read file.",
+  "export.pasteFirst": "Please paste your data first.",
+  "export.imported": "Data imported successfully! Reloading...",
+  "export.invalidFormat": "Invalid data format.",
+  "export.importError": "Error importing data.",
+  "export.confirmClear": "Are you sure? This will delete ALL your progress, badges, and settings. This cannot be undone.",
+
+  // ── Programs ─────────────────────────────────────────────────────────────
+  "programs.notFound": "Program not found",
+  "programs.backToTraining": "Back to training",
+  "programs.complete": "Complete",
+  "programs.overallProgress": "Overall Progress",
+  "programs.lastPracticed": "Last practiced: {date}",
+  "programs.drills": "Drills",
+  "programs.step": "Step {number}",
+  "programs.start": "Start Program",
+  "programs.completeTitle": "Program Complete!",
+  "programs.completedOn": "Completed on {date}",
+  "programs.finishMsg": "Great work finishing this program!",
+  "programs.resetSteps": "Reset steps to redo",
 
   // ── Skills detail ───────────────────────────────────────────────────────
   "skills.learned": "Learned",
@@ -435,6 +472,8 @@ const es: Record<TranslationKey, string> = {
   "dashboard.minAgo": "hace {count}m",
   "dashboard.hrAgo": "hace {count}h",
   "dashboard.dayAgo": "hace {count}d",
+  "dashboard.sessionsLabel": "sesiones",
+  "dashboard.you": "Tú",
 
   // ── Progress ────────────────────────────────────────────────────────────
   "progress.title": "Tu trayectoria",
@@ -543,6 +582,41 @@ const es: Record<TranslationKey, string> = {
   "profile.loading": "Cargando...",
   "profile.subscribe": "Suscribirse {price}",
   "profile.sessionUsage": "Uso de sesiones",
+  "profile.toggleSoundEffects": "Alternar efectos de sonido",
+
+  // ── Export / data management ─────────────────────────────────────────────
+  "export.exportData": "Exportar datos",
+  "export.exportDesc": "Guarda tu progreso descargando un archivo de respaldo. Guárdalo en un lugar seguro para poder restaurarlo más adelante.",
+  "export.downloadBackup": "Descargar archivo de respaldo",
+  "export.importData": "Importar datos",
+  "export.importDesc": "Sube tu archivo de respaldo o pega los datos exportados abajo para restaurar tu progreso.",
+  "export.chooseBackup": "Elegir archivo de respaldo",
+  "export.pastePlaceholder": "Pega aquí tus datos JSON...",
+  "export.dangerZone": "Zona de peligro",
+  "export.dangerZoneDesc": "Elimina todos tus datos y empieza de nuevo. Esta acción es irreversible.",
+  "export.resetAllData": "Restablecer todos los datos",
+  "export.downloaded": "¡Archivo descargado! Guárdalo en un lugar seguro.",
+  "export.fileLoaded": "Archivo cargado. Haz clic en Importar datos para restaurar.",
+  "export.readError": "No se pudo leer el archivo.",
+  "export.pasteFirst": "Primero pega tus datos.",
+  "export.imported": "¡Datos importados correctamente! Recargando...",
+  "export.invalidFormat": "Formato de datos no válido.",
+  "export.importError": "Error al importar datos.",
+  "export.confirmClear": "¿Estás seguro? Esto eliminará TODO tu progreso, insignias y ajustes. Esta acción no se puede deshacer.",
+
+  // ── Programs ─────────────────────────────────────────────────────────────
+  "programs.notFound": "Programa no encontrado",
+  "programs.backToTraining": "Volver al entrenamiento",
+  "programs.complete": "Completado",
+  "programs.overallProgress": "Progreso general",
+  "programs.lastPracticed": "Última práctica: {date}",
+  "programs.drills": "Ejercicios",
+  "programs.step": "Paso {number}",
+  "programs.start": "Empezar programa",
+  "programs.completeTitle": "¡Programa completado!",
+  "programs.completedOn": "Completado el {date}",
+  "programs.finishMsg": "¡Gran trabajo al terminar este programa!",
+  "programs.resetSteps": "Reiniciar pasos para repetirlos",
 
   // ── Skills detail ───────────────────────────────────────────────────────
   "skills.learned": "Aprendida",

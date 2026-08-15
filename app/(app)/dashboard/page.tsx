@@ -12,6 +12,7 @@ import { useMotionSensor } from "@/hooks/use-motion-sensor"
 import { useRecommendation } from "@/hooks/use-recommendation"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
+import { useI18n } from "@/hooks/use-i18n"
 import { WeeklyActivityChart } from "@/components/weekly-activity-chart"
 import { PracticeHeatmap } from "@/components/practice-heatmap"
 import { LeaderboardWidget } from "@/components/leaderboard-widget"
@@ -24,14 +25,8 @@ import { getAllProgramProgress, getStreakStatus } from "@/lib/storage"
 import { useStreakReminder } from "@/hooks/use-streak-reminder"
 import { getProgramById } from "@/lib/programs-database"
 import { cn } from "@/lib/utils"
-import type { PracticeSession, ProgramProgress, Sport, Program } from "@/lib/types"
+import type { PracticeSession, ProgramProgress, Program } from "@/lib/types"
 import { startOfDay, subDays } from "date-fns"
-
-const sportLabels: Record<Sport, string> = {
-  soccer: "Soccer",
-  basketball: "Basketball",
-  tennis: "Tennis",
-}
 
 function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes}m`
@@ -142,6 +137,7 @@ export default function HomePage() {
   const { isSupported, isTracking, analysis, startTracking, stopTracking, permissionStatus } = useMotionSensor()
   const { userStats, isOnboarded, isLoading, sessions, settings, activeSport } = useApp()
   const { user } = useAuth()
+  const { t } = useI18n()
   const { recommendation } = useRecommendation(analysis.fluidityScore)
   const [showRecommendation, setShowRecommendation] = useState(false)
   const [recommendedSkill, setRecommendedSkill] = useState(allSkills[0])
@@ -180,9 +176,9 @@ export default function HomePage() {
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return "Good morning"
-    if (hour < 18) return "Good afternoon"
-    return "Good evening"
+    if (hour < 12) return t("dashboard.greetingMorning")
+    if (hour < 18) return t("dashboard.greetingAfternoon")
+    return t("dashboard.greetingEvening")
   }
 
   const latestAchievementId = userStats.achievements[userStats.achievements.length - 1]
@@ -239,7 +235,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <PreceptLogo className="w-16 h-16" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t("dashboard.loading")}</p>
         </div>
       </div>
     )
@@ -255,8 +251,8 @@ export default function HomePage() {
         <div className="flex items-center justify-between px-4 h-16 max-w-lg md:max-w-5xl mx-auto">
           <div className="flex items-center">
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || "athlete"}!</h1>
-              <p className="text-xs text-muted-foreground">{sportLabels[preferredSport]} — let's level up today</p>
+              <h1 className="text-lg font-semibold tracking-tight">{getGreeting()}, {user?.name || t("dashboard.athlete")}!</h1>
+              <p className="text-xs text-muted-foreground">{t("dashboard.tagline", { sport: preferredSport === "soccer" ? t("sport.soccer") : preferredSport === "basketball" ? t("sport.basketball") : t("sport.tennis") })}</p>
             </div>
           </div>
         </div>
@@ -273,7 +269,7 @@ export default function HomePage() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Pick up where you left off</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">{t("dashboard.resume")}</p>
                 <p className="font-semibold truncate">{lastSkill.name}</p>
               </div>
               <svg className="w-5 h-5 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -293,17 +289,17 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">Today's Goal</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">{t("dashboard.todayGoal")}</h3>
             <p className="text-2xl font-bold font-mono">
               {formatMinutes(todayMinutes)}
               <span className="text-sm text-muted-foreground"> / {formatMinutes(dailyGoal)}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {dailyProgress >= 100
-                ? "Goal smashed! Keep the momentum going."
+                ? t("dashboard.goalSmashed")
                 : todayMinutes > 0
-                  ? `${formatMinutes(dailyGoal - todayMinutes)} to go today`
-                  : "Start practicing to hit today's target"}
+                  ? t("dashboard.goalRemaining", { minutes: formatMinutes(dailyGoal - todayMinutes) })
+                  : t("dashboard.goalStart")}
             </p>
           </div>
         </div>
@@ -315,7 +311,7 @@ export default function HomePage() {
                 <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
-                <span className="text-xs font-medium text-primary uppercase tracking-wider">Suggested skill</span>
+                <span className="text-xs font-medium text-primary uppercase tracking-wider">{t("dashboard.suggestedSkill")}</span>
               </div>
               <button
                 onClick={() => setShowRecommendation(false)}
@@ -332,7 +328,7 @@ export default function HomePage() {
 
             <Link href={`/skills/${recommendedSkill.id}`}>
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground hover-lift">
-                Learn this skill
+                {t("dashboard.learnSkill")}
               </Button>
             </Link>
           </div>
@@ -341,9 +337,9 @@ export default function HomePage() {
         {latestAchievement && (
           <div className="rounded-2xl bg-card p-5 border border-border">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Latest Achievement</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.latestAchievement")}</h3>
               <Link href="/progress" className="text-xs text-primary hover:underline">
-                View All
+                {t("dashboard.viewAll")}
               </Link>
             </div>
             <div className="flex justify-center">
@@ -359,7 +355,7 @@ export default function HomePage() {
                 <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 4v16h18V4H3zm16 14H5V8h14v10z" />
                 </svg>
-                <p className="text-muted-foreground text-xs uppercase tracking-wider">Fluidity Avg</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.fluidityAvg")}</p>
               </div>
               <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
             </div>
@@ -370,7 +366,7 @@ export default function HomePage() {
                 <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-muted-foreground text-xs uppercase tracking-wider">Practice Time</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.practiceTime")}</p>
               </div>
               <p className="text-3xl font-bold font-mono text-foreground">
                 {formatMinutes(userStats.practiceMinutes || 0)}
@@ -383,12 +379,12 @@ export default function HomePage() {
                 <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="text-muted-foreground text-xs uppercase tracking-wider">This Week</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.thisWeek")}</p>
               </div>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-bold font-mono text-foreground">
                   {weeklySessions.length}
-                  <span className="text-lg text-muted-foreground"> sessions</span>
+                  <span className="text-lg text-muted-foreground">{t("dashboard.sessionsLabel")}</span>
                 </p>
                 <TrendBadge change={sessionsTrend} />
               </div>
@@ -400,7 +396,7 @@ export default function HomePage() {
                 <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <p className="text-muted-foreground text-xs uppercase tracking-wider">Weekly Goal</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.weeklyGoal")}</p>
               </div>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-bold font-mono text-foreground">
@@ -421,13 +417,13 @@ export default function HomePage() {
 
         <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{sportLabels[activeSport]} Stats</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.sportStats", { sport: activeSport === "soccer" ? t("sport.soccer") : activeSport === "basketball" ? t("sport.basketball") : t("sport.tennis") })}</span>
             </div>
             {activeSport === "soccer" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Pass Accuracy</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.passAccuracy")}</p>
                     {userStats.passAccuracy > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
                   </div>
                   <p className="text-3xl font-bold font-mono text-blue-400">{userStats.passAccuracy || 0}%</p>
@@ -437,7 +433,7 @@ export default function HomePage() {
                 </div>
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Dribbles</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.dribbles")}</p>
                     {userStats.successfulDribbles > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
                   </div>
                   <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
@@ -448,14 +444,14 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Shots on Target</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.shotsOnTarget")}</p>
                     {userStats.shotsOnTarget > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
                   </div>
                   <p className="text-3xl font-bold font-mono text-orange-400">{userStats.shotsOnTarget || 0}</p>
                 </div>
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Dribbles</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.dribbles")}</p>
                     {userStats.successfulDribbles > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
                   </div>
                   <p className="text-3xl font-bold font-mono text-emerald-400">{userStats.successfulDribbles || 0}</p>
@@ -466,14 +462,14 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Avg Fluidity</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.avgFluidity")}</p>
                     {userStats.avgFluidityScore > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">AI</span>}
                   </div>
                   <p className="text-3xl font-bold font-mono text-primary">{userStats.avgFluidityScore || "—"}</p>
                 </div>
                 <div className="rounded-2xl bg-card p-4 border border-border">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wider">Matches Played</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{t("dashboard.matchesPlayed")}</p>
                   </div>
                   <p className="text-3xl font-bold font-mono text-foreground">{userStats.matchesPlayed || 0}</p>
                 </div>
@@ -488,7 +484,7 @@ export default function HomePage() {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-1">Tip of the Day</h3>
+            <h3 className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-1">{t("dashboard.tipOfDay")}</h3>
             <p className="text-sm text-foreground/90 leading-relaxed">{dailyTip}</p>
           </div>
         </div>
@@ -497,9 +493,9 @@ export default function HomePage() {
 
         <PracticeHeatmap sessions={sessions} />
 
-        <LeaderboardWidget userMinutes={weekMinutes} userName={user?.name || "You"} sport={preferredSport} />
+        <LeaderboardWidget userMinutes={weekMinutes} userName={user?.name || t("dashboard.you")} sport={preferredSport} />
 
-        <ClubLeaderboardCard userMinutes={weekMinutes} userName={user?.name || "You"} sport={preferredSport} />
+        <ClubLeaderboardCard userMinutes={weekMinutes} userName={user?.name || t("dashboard.you")} sport={preferredSport} />
 
         {hasBests && (
           <div className="rounded-2xl bg-card border border-border p-5">
@@ -507,20 +503,20 @@ export default function HomePage() {
               <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
               </svg>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Personal Bests</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.personalBests")}</h3>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center">
                 <p className="text-2xl font-bold font-mono text-primary">{personalBests.bestFluidity || "—"}</p>
-                <p className="text-xs text-muted-foreground mt-1">Top Fluidity</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.topFluidity")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold font-mono text-orange-400">{personalBests.longestStreak}</p>
-                <p className="text-xs text-muted-foreground mt-1">Longest Streak</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.longestStreak")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold font-mono text-emerald-400">{personalBests.mostSessionsWeek}</p>
-                <p className="text-xs text-muted-foreground mt-1">Best Week</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.bestWeek")}</p>
               </div>
             </div>
           </div>
@@ -528,10 +524,10 @@ export default function HomePage() {
 
         <div className="rounded-2xl bg-card border border-border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Sessions</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.recentSessions")}</h3>
             {recentSessions.length > 0 && (
               <Link href="/progress" className="text-xs text-primary hover:underline">
-                View All
+                {t("dashboard.viewAll")}
               </Link>
             )}
           </div>
@@ -582,9 +578,9 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-muted-foreground text-sm">No sessions yet</p>
+              <p className="text-muted-foreground text-sm">{t("dashboard.noSessions")}</p>
               <Link href="/practice" className="text-xs text-primary hover:underline mt-1 inline-block">
-                Start your first practice
+                {t("dashboard.startFirstPractice")}
               </Link>
             </div>
           )}
@@ -596,11 +592,11 @@ export default function HomePage() {
               <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Program</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.activeProgram")}</h3>
             </div>
             <p className="text-lg font-bold mb-1">{activeProgram.program.name}</p>
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span>{activeProgram.progress.completedSteps} / {activeProgram.progress.totalSteps} steps</span>
+              <span>{t("dashboard.stepsCount", { completed: activeProgram.progress.completedSteps, total: activeProgram.progress.totalSteps })}</span>
               <span>{Math.round((activeProgram.progress.completedSteps / activeProgram.progress.totalSteps) * 100)}%</span>
             </div>
             <div className="w-full bg-secondary rounded-full h-2 mb-4 overflow-hidden">
@@ -611,7 +607,7 @@ export default function HomePage() {
             </div>
             <Link href={`/programs/${activeProgram.program.id}`}>
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                Continue Program
+                {t("dashboard.continueProgram")}
               </Button>
             </Link>
           </div>
@@ -630,13 +626,13 @@ export default function HomePage() {
           {!isSupported ? (
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
               <p className="text-amber-500 text-sm text-center">
-                Motion sensors not available on this device. Try on a mobile device for full experience.
+                {t("dashboard.motionUnavailable")}
               </p>
             </div>
           ) : permissionStatus === "denied" ? (
             <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4">
               <p className="text-destructive text-sm text-center">
-                Motion permission denied. Please enable it in your device settings.
+                {t("dashboard.motionDenied")}
               </p>
             </div>
           ) : (
@@ -648,7 +644,7 @@ export default function HomePage() {
                 !isTracking && "bg-primary hover:bg-primary/90 text-primary-foreground",
               )}
             >
-              {isTracking ? "Stop Motion Tracking" : "Start Motion Tracking"}
+              {isTracking ? t("dashboard.stopTracking") : t("dashboard.startTracking")}
             </Button>
           )}
         </div>
@@ -656,7 +652,7 @@ export default function HomePage() {
         <div className="rounded-2xl bg-card p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Skills Learned
+              {t("dashboard.skillsLearned")}
             </h3>
             <span className="text-xs text-muted-foreground">
               {sportLearnedSkills.length} / {sportSkills.length}
@@ -680,9 +676,9 @@ export default function HomePage() {
                 <svg className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <p className="text-muted-foreground text-sm">No skills unlocked yet</p>
+                <p className="text-muted-foreground text-sm">{t("dashboard.noSkills")}</p>
                 <Link href="/practice" className="text-xs text-primary hover:underline mt-1 inline-block">
-                  Browse skills
+                  {t("dashboard.browseSkills")}
                 </Link>
               </div>
             )}
@@ -698,8 +694,8 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h4 className="font-semibold mb-1">Start Practice</h4>
-              <p className="text-muted-foreground text-xs">Begin a guided session</p>
+              <h4 className="font-semibold mb-1">{t("dashboard.startPractice")}</h4>
+              <p className="text-muted-foreground text-xs">{t("dashboard.beginGuided")}</p>
             </div>
           </Link>
           <Link href="/practice" className="block">
@@ -709,8 +705,8 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <h4 className="font-semibold mb-1">Browse Skills</h4>
-              <p className="text-muted-foreground text-xs">Explore all techniques</p>
+              <h4 className="font-semibold mb-1">{t("dashboard.browseSkillsTitle")}</h4>
+              <p className="text-muted-foreground text-xs">{t("dashboard.exploreTechniques")}</p>
             </div>
           </Link>
         </div>

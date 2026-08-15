@@ -13,6 +13,7 @@ import { allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { trainingPrograms, getProgramsBySport } from "@/lib/programs-database"
 import { getAllProgramProgress, initProgramProgress } from "@/lib/storage"
 import { useApp } from "@/contexts/app-context"
+import { useI18n } from "@/hooks/use-i18n"
 import { cn } from "@/lib/utils"
 import type { Skill, Sport, Program } from "@/lib/types"
 
@@ -34,6 +35,7 @@ const sportIcons: Record<Sport, ReactNode> = {
 
 function SkillsTab() {
   const { userStats, activeSport } = useApp()
+  const { t } = useI18n()
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>("all")
   const [difficultyFilter, setDifficultyFilter] = useState<FilterDifficulty>("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -82,14 +84,14 @@ function SkillsTab() {
     })
 
   const categories: { id: FilterCategory; label: string; icon?: ReactNode }[] = [
-    { id: "all", label: "All Skills" },
-    { id: "bookmarked", label: "Bookmarked", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg> },
-    { id: "dribbling", label: "Dribbling", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg> },
-    { id: "passing", label: "Passing", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg> },
-    { id: "shooting", label: "Shooting", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-    { id: "defending", label: "Defending", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> },
-    { id: "movement", label: "Movement", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg> },
-    { id: "striking", label: "Striking", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    { id: "all", label: t("practice.allSkills") },
+    { id: "bookmarked", label: t("practice.bookmarked"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg> },
+    { id: "dribbling", label: t("practice.dribbling"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} /></svg> },
+    { id: "passing", label: t("practice.passing"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg> },
+    { id: "shooting", label: t("practice.shooting"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+    { id: "defending", label: t("practice.defending"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> },
+    { id: "movement", label: t("practice.movement"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg> },
+    { id: "striking", label: t("practice.striking"), icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
   ]
 
   const difficulties: FilterDifficulty[] = ["all", "beginner", "intermediate", "advanced"]
@@ -104,7 +106,7 @@ function SkillsTab() {
             <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recommended for You</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("practice.recommended")}</h2>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-3 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
             {recommendedSkills.map((skill) => (
@@ -166,19 +168,19 @@ function SkillsTab() {
                 : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
             )}
           >
-            {diff === "all" ? "All Levels" : diff.charAt(0).toUpperCase() + diff.slice(1)}
+            {diff === "all" ? t("practice.allLevels") : diff.charAt(0).toUpperCase() + diff.slice(1)}
           </button>
         ))}
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">Sort by</span>
+        <span className="text-xs text-muted-foreground">{t("practice.sortBy")}</span>
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
           {([
-            { id: "recommended", label: "Recommended" },
-            { id: "difficulty", label: "Difficulty" },
-            { id: "az", label: "A-Z" },
-            { id: "unlearned", label: "Not Learned" },
+            { id: "recommended", label: t("practice.recommendedOption") },
+            { id: "difficulty", label: t("practice.difficultyOption") },
+            { id: "az", label: t("practice.azOption") },
+            { id: "unlearned", label: t("practice.notLearned") },
           ] as { id: SortOption; label: string }[]).map((opt) => (
             <button
               key={opt.id}
@@ -218,9 +220,9 @@ function SkillsTab() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
-          <h3 className="font-semibold text-lg mb-2">No skills found</h3>
+          <h3 className="font-semibold text-lg mb-2">{t("practice.noSkills")}</h3>
           <p className="text-muted-foreground text-sm max-w-[250px] mx-auto">
-            We couldn&apos;t find any skills matching your filters. Try adjusting them!
+            {t("practice.noSkillsHint")}
           </p>
         </div>
       )}
@@ -230,6 +232,7 @@ function SkillsTab() {
 
 function ProgramsTab() {
   const { activeSport } = useApp()
+  const { t } = useI18n()
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | Program["difficulty"]>("all")
   const [categoryFilter, setCategoryFilter] = useState<"all" | Program["category"]>("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -296,7 +299,7 @@ function ProgramsTab() {
           {done && (
             <div className="absolute top-0 right-0 w-20 h-20">
               <div className="absolute top-2 right-[-28px] bg-emerald-500 text-white text-[10px] font-bold uppercase px-8 py-0.5 rotate-45 shadow-lg">
-                Done
+                {t("practice.done")}
               </div>
             </div>
           )}
@@ -307,7 +310,7 @@ function ProgramsTab() {
               </div>
               <div>
                 <h3 className="font-semibold">{program.name}</h3>
-                <p className="text-xs text-muted-foreground">{program.steps.length} drills · {program.estimatedMinutes} min</p>
+                <p className="text-xs text-muted-foreground">{t("practice.drillsMinutes", { count: program.steps.length, minutes: program.estimatedMinutes })}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -336,7 +339,7 @@ function ProgramsTab() {
 
   return (
     <div className="space-y-4">
-      <SkillSearch onSearch={setSearchQuery} placeholder="Search programs..." />
+      <SkillSearch onSearch={setSearchQuery} placeholder={t("practice.searchPrograms")} />
 
       <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-wrap md:flex-nowrap">
         {(["beginner", "intermediate", "advanced"] as const).map((f) => (
@@ -367,7 +370,7 @@ function ProgramsTab() {
                 : "bg-transparent border-transparent text-muted-foreground hover:bg-secondary/50",
             )}
           >
-            {c === "all" ? "All Types" : c === "full" ? "Full Session" : c}
+            {c === "all" ? t("practice.allTypes") : c === "full" ? t("practice.fullSession") : c}
           </button>
         ))}
       </div>
@@ -379,7 +382,7 @@ function ProgramsTab() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 2.25-4.5 2.25v-4.5z" />
             </svg>
-            Continue Training
+            {t("practice.continueTraining")}
           </h2>
           {inProgressPrograms.map((program) => renderProgram(program))}
           <div className="border-b border-border/50 pt-1" />
@@ -395,9 +398,9 @@ function ProgramsTab() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
-          <h3 className="font-semibold text-lg mb-2">No programs found</h3>
+          <h3 className="font-semibold text-lg mb-2">{t("practice.noPrograms")}</h3>
           <p className="text-muted-foreground text-sm max-w-[250px] mx-auto">
-            Try adjusting your filters or search.
+            {t("practice.noProgramsHint")}
           </p>
         </div>
       )}
@@ -480,22 +483,23 @@ function SportSwitcher() {
 }
 
 export default function PracticePage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="px-4 pt-4 pb-0 max-w-lg md:max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold mb-1">Training</h1>
-              <p className="text-muted-foreground text-xs">Skills, programs & practice</p>
+              <h1 className="text-2xl font-bold mb-1">{t("practice.trainingTitle")}</h1>
+              <p className="text-muted-foreground text-xs">{t("practice.trainingSubtitle")}</p>
             </div>
             <SportSwitcher />
           </div>
           <Tabs defaultValue="practice">
             <TabsList className="w-full bg-secondary/50">
-              <TabsTrigger value="practice" className="flex-1 text-xs">Practice</TabsTrigger>
-              <TabsTrigger value="skills" className="flex-1 text-xs">Skills</TabsTrigger>
-              <TabsTrigger value="programs" className="flex-1 text-xs">Programs</TabsTrigger>
+              <TabsTrigger value="practice" className="flex-1 text-xs">{t("practice.tabPractice")}</TabsTrigger>
+              <TabsTrigger value="skills" className="flex-1 text-xs">{t("practice.tabSkills")}</TabsTrigger>
+              <TabsTrigger value="programs" className="flex-1 text-xs">{t("practice.tabPrograms")}</TabsTrigger>
             </TabsList>
             <div className="py-4">
               <TabsContent value="practice">

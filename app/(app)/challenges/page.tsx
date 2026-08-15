@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { PreceptLogo } from "@/components/precept-logo"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/hooks/use-i18n"
 import { getOrCreateSessionToken } from "@/lib/auth"
 import {
   acceptChallenge,
@@ -14,13 +15,14 @@ import {
   resolveChallenge,
   type Challenge,
 } from "@/lib/challenges"
+import type { TranslationKey } from "@/lib/i18n"
 import type { Sport } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const sportLabels: Record<Sport, string> = {
-  soccer: "Soccer",
-  basketball: "Basketball",
-  tennis: "Tennis",
+const sportKeys: Record<Sport, TranslationKey> = {
+  soccer: "sport.soccer",
+  basketball: "sport.basketball",
+  tennis: "sport.tennis",
 }
 
 function formatMinutes(minutes: number): string {
@@ -55,30 +57,32 @@ function ChallengeRow({
   onDecline: (id: string) => void
   onResolve: (id: string) => void
 }) {
+  const { t } = useI18n()
   const opp = opponentOf(challenge)
   const mine = myMinutes(challenge)
-  const sportLabel = challenge.sport ? sportLabels[challenge.sport as Sport] ?? challenge.sport : null
+  const sportKey = challenge.sport ? sportKeys[challenge.sport as Sport] : undefined
+  const sportLabel = sportKey ? t(sportKey) : challenge.sport || null
   const isBusy = busyId === challenge.id
 
   const statusLabel =
     challenge.status === "pending"
       ? challenge.mine === "challenger"
-        ? "Waiting for response"
-        : "Challenge"
+        ? t("challenges.waiting")
+        : t("challenges.challenge")
       : challenge.status === "accepted"
-        ? "Active — practice to win"
+        ? t("challenges.activeWin")
         : challenge.status === "declined"
-          ? "Declined"
+          ? t("challenges.declined")
           : challenge.winnerToken === currentToken
-            ? "You won"
+            ? t("challenges.youWon")
             : challenge.winnerToken === null
-              ? "Draw"
-              : "You lost"
+              ? t("challenges.draw")
+              : t("challenges.youLost")
 
   return (
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-semibold truncate">You vs {opp.name}</p>
+        <p className="font-semibold truncate">{t("challenges.youVs", { name: opp.name })}</p>
         <span
           className={cn(
             "text-xs font-medium px-2 py-0.5 rounded-full",
@@ -96,15 +100,15 @@ function ChallengeRow({
       <div className="flex items-center justify-between text-sm mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 text-xs font-semibold">
-            Y
+            {t("challenges.you").charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="font-medium truncate">You</p>
+            <p className="font-medium truncate">{t("challenges.you")}</p>
             <p className="text-muted-foreground font-mono">{formatMinutes(mine)}</p>
           </div>
         </div>
         <span className="text-muted-foreground text-xs">
-          {sportLabel ?? "All sports"} · this week
+          {sportLabel ?? t("challenges.allSports")} · {t("challenges.thisWeek")}
         </span>
         <div className="flex items-center gap-2 min-w-0 justify-end">
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 text-xs font-semibold">
@@ -124,7 +128,7 @@ function ChallengeRow({
             disabled={isBusy}
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            Accept
+            {t("challenges.accept")}
           </Button>
           <Button
             onClick={() => onDecline(challenge.id)}
@@ -132,7 +136,7 @@ function ChallengeRow({
             variant="outline"
             className="flex-1"
           >
-            Decline
+            {t("challenges.decline")}
           </Button>
         </div>
       )}
@@ -143,17 +147,17 @@ function ChallengeRow({
           disabled={isBusy}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          Resolve Challenge
+          {t("challenges.resolve")}
         </Button>
       )}
 
       {challenge.status === "completed" && (
         <p className="text-xs text-muted-foreground text-center">
           {challenge.winnerToken === currentToken
-            ? "Great work — you out-practiced them!"
+            ? t("challenges.winNote")
             : challenge.winnerToken === null
-              ? "Tied at {formatMinutes(mine)} this week."
-              : "They logged more practice time this week."}
+              ? t("challenges.tieNote", { minutes: formatMinutes(mine) })
+              : t("challenges.loseNote")}
         </p>
       )}
     </div>
@@ -172,6 +176,8 @@ export default function ChallengesPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+
+  const { t } = useI18n()
 
   const currentToken = getOrCreateSessionToken()
 
@@ -208,7 +214,7 @@ export default function ChallengesPage() {
       }
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.")
+      setError(err instanceof Error ? err.message : t("challenges.genericError"))
     } finally {
       setBusyId(null)
     }
@@ -221,10 +227,10 @@ export default function ChallengesPage() {
     try {
       await createChallenge({ opponentCode: opponentCode.trim(), sport })
       setOpponentCode("")
-      setNotice("Challenge sent!")
+      setNotice(t("challenges.sent"))
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't create the challenge.")
+      setError(err instanceof Error ? err.message : t("challenges.createError"))
     } finally {
       setCreating(false)
     }
@@ -249,8 +255,8 @@ export default function ChallengesPage() {
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-16 max-w-lg md:max-w-5xl mx-auto">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Challenges</h1>
-            <p className="text-xs text-muted-foreground">Head-to-head with friends</p>
+            <h1 className="text-lg font-semibold tracking-tight">{t("challenges.title")}</h1>
+            <p className="text-xs text-muted-foreground">{t("challenges.subtitle")}</p>
           </div>
           <PreceptLogo className="w-8 h-8" />
         </div>
@@ -260,7 +266,7 @@ export default function ChallengesPage() {
         {!configured && (
           <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
             <p className="text-amber-500 text-sm text-center">
-              Challenges are unavailable until cloud sync is configured.
+              {t("challenges.unavailable")}
             </p>
           </div>
         )}
@@ -268,17 +274,17 @@ export default function ChallengesPage() {
         {configured && (
           <div className="rounded-2xl bg-card border border-border p-5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-              Your Player Code
+              {t("challenges.yourCode")}
             </p>
             <p className="text-sm text-muted-foreground mb-3">
-              Share this code so friends can challenge you.
+              {t("challenges.codeHint")}
             </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-accent/30 font-mono text-lg font-bold tracking-[0.25em] text-center">
                 {playerCode ?? "······"}
               </div>
               <Button onClick={handleCopy} variant="outline" className="shrink-0">
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("challenges.copied") : t("challenges.copy")}
               </Button>
             </div>
           </div>
@@ -287,14 +293,14 @@ export default function ChallengesPage() {
         {configured && (
           <div className="rounded-2xl bg-card border border-border p-5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              New Challenge
+              {t("challenges.newChallenge")}
             </p>
             <div className="space-y-3">
               <input
                 value={opponentCode}
                 onChange={(e) => setOpponentCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                placeholder="Opponent's player code"
+                placeholder={t("challenges.opponentCode")}
                 maxLength={12}
                 className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono uppercase tracking-widest outline-none focus:border-primary/50"
               />
@@ -303,16 +309,16 @@ export default function ChallengesPage() {
                 onChange={(e) => setSport(e.target.value as Sport)}
                 className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-primary/50"
               >
-                <option value="soccer">Soccer</option>
-                <option value="basketball">Basketball</option>
-                <option value="tennis">Tennis</option>
+                <option value="soccer">{t("sport.soccer")}</option>
+                <option value="basketball">{t("sport.basketball")}</option>
+                <option value="tennis">{t("sport.tennis")}</option>
               </select>
               <Button
                 onClick={handleCreate}
                 disabled={creating || opponentCode.trim().length < 4}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                {creating ? "Sending..." : "Send Challenge"}
+                {creating ? t("challenges.sending") : t("challenges.send")}
               </Button>
             </div>
           </div>
@@ -340,15 +346,15 @@ export default function ChallengesPage() {
             <svg className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
             </svg>
-            <p className="text-muted-foreground text-sm">No challenges yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Share your code and send one to a friend.</p>
+            <p className="text-muted-foreground text-sm">{t("challenges.empty")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("challenges.emptyHint")}</p>
           </div>
         ) : (
           <>
             {pending.length > 0 && (
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  Pending ({pending.length})
+                  {t("challenges.pending", { count: pending.length })}
                 </h3>
                 <div className="space-y-3">
                   {pending.map((c) => (
@@ -357,8 +363,8 @@ export default function ChallengesPage() {
                       challenge={c}
                       currentToken={currentToken}
                       busyId={busyId}
-                      onAccept={(id) => runAction(id, acceptChallenge, "Challenge accepted — go practice!")}
-                      onDecline={(id) => runAction(id, declineChallenge, "Challenge declined.")}
+                      onAccept={(id) => runAction(id, acceptChallenge, t("challenges.acceptedNotice"))}
+                      onDecline={(id) => runAction(id, declineChallenge, t("challenges.declinedNotice"))}
                       onResolve={() => {}}
                     />
                   ))}
@@ -369,7 +375,7 @@ export default function ChallengesPage() {
             {active.length > 0 && (
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  Active ({active.length})
+                  {t("challenges.active", { count: active.length })}
                 </h3>
                 <div className="space-y-3">
                   {active.map((c) => (
@@ -381,8 +387,8 @@ export default function ChallengesPage() {
                       onAccept={() => {}}
                       onDecline={() => {}}
                       onResolve={(id) =>
-                        runAction(id, resolveChallenge, "Challenge resolved.", (result) =>
-                          result.tied ? "It's a tie this week." : "Winner decided by practice minutes!",
+                        runAction(id, resolveChallenge, t("challenges.resolvedNotice"), (result) =>
+                          result.tied ? t("challenges.tieNotice") : t("challenges.winnerNotice"),
                         )
                       }
                     />
@@ -394,7 +400,7 @@ export default function ChallengesPage() {
             {history.length > 0 && (
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  History ({history.length})
+                  {t("challenges.history", { count: history.length })}
                 </h3>
                 <div className="space-y-3">
                   {history.map((c) => (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getSkillById } from "@/lib/skills-database"
 
 import { useVideoGeneration } from "@/hooks/use-video-generation"
+import { useI18n } from "@/hooks/use-i18n"
 import { cn } from "@/lib/utils"
 import { useApp } from "@/contexts/app-context"
 
@@ -23,6 +24,7 @@ const difficultyColors = {
 export default function SkillDetailPage({ params }: SkillDetailPageProps) {
   const { id } = use(params)
   const router = useRouter()
+  const { t } = useI18n()
   const { userStats } = useApp()
   const skill = getSkillById(id)
   if (!skill) {
@@ -42,11 +44,11 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
   const getProgressText = () => {
     switch (progress) {
       case "starting":
-        return "Initializing Veo..."
+        return t("skills.initializing")
       case "generating":
-        return "Generating video (this may take a minute)..."
+        return t("skills.generating")
       case "error":
-        return error || "Generation failed"
+        return error || t("skills.genFailed")
       default:
         return ""
     }
@@ -68,7 +70,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Learned
+              {t("skills.learned")}
             </div>
           )}
         </div>
@@ -83,7 +85,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
                 <video src={videoUrl} controls className="w-full h-full object-cover" autoPlay loop playsInline />
                 {isDemo && (
                   <span className="absolute top-2 right-2 px-2 py-1 rounded-full bg-amber-500/90 text-black text-[10px] font-semibold uppercase tracking-wide">
-                    Demo video
+                    {t("skills.demoVideo")}
                   </span>
                 )}
               </>
@@ -116,7 +118,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
                   )}
                 </div>
                 <p className="text-muted-foreground text-sm mb-1">
-                  {isGenerating ? getProgressText() : "AI-generated tutorial video"}
+                  {isGenerating ? getProgressText() : t("skills.aiTutorial")}
                 </p>
                 {progress === "error" && <p className="text-destructive text-xs mb-4">{error}</p>}
                 {!isGenerating && !videoUrl && (
@@ -124,7 +126,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
                     onClick={handleGenerateVideo}
                     className="mt-3 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
-                    Generate Video with Veo
+                    {t("skills.generateVeo")}
                   </Button>
                 )}
               </div>
@@ -174,7 +176,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Why Learn This
+              {t("skills.whyLearn")}
             </h3>
             <p className="text-sm text-foreground/80">{skill.reasoning}</p>
           </div>
@@ -182,7 +184,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
           {/* Steps */}
           <div className="rounded-2xl bg-card border border-border p-5">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-              How to Execute
+              {t("skills.howToExecute")}
             </h3>
             <div className="space-y-4">
               {skill.steps.map((step, index) => (
@@ -199,7 +201,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
           {/* Visual Script (for demo) */}
           <details className="rounded-xl bg-secondary/50 border border-border">
             <summary className="px-4 py-3 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              View AI Video Prompt
+              {t("skills.viewPrompt")}
             </summary>
             <div className="px-4 pb-4">
               <p className="text-sm text-muted-foreground font-mono">{skill.visualScript}</p>
@@ -213,7 +215,7 @@ export default function SkillDetailPage({ params }: SkillDetailPageProps) {
             className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
             onClick={() => router.push(`/practice?skill=${skill.id}`)}
           >
-            Practice This Skill
+            {t("skills.practiceThis")}
           </Button>
         </div>
       </main>

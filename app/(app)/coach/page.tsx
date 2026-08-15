@@ -7,6 +7,7 @@ import { PreceptLogo } from "@/components/precept-logo"
 import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/contexts/app-context"
+import { useI18n } from "@/hooks/use-i18n"
 import {
   claimAssignment,
   completeAssignment,
@@ -30,6 +31,7 @@ function CreatedRow({
   onCopy: (code: string) => void
   onShare: (assignment: CreatedAssignment) => void
 }) {
+  const { t } = useI18n()
   return (
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="flex items-start justify-between gap-3">
@@ -39,17 +41,20 @@ function CreatedRow({
         </div>
         <div className="flex gap-2 shrink-0">
           <Button size="sm" variant="outline" onClick={() => onShare(assignment)}>
-            Share
+            {t("coach.share")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => onCopy(assignment.code)}>
-            {copied ? "Copied" : "Copy Code"}
+            {copied ? t("coach.copied") : t("coach.copyCode")}
           </Button>
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
         <span className="font-mono tracking-widest">{assignment.code}</span>
         <span>
-          {assignment.completedClaims}/{assignment.claims} completed
+          {t("coach.completedCount", {
+            completed: assignment.completedClaims,
+            claims: assignment.claims,
+          })}
         </span>
       </div>
     </div>
@@ -57,13 +62,14 @@ function CreatedRow({
 }
 
 function ClaimedRow({ assignment }: { assignment: ClaimedAssignment }) {
+  const { t } = useI18n()
   return (
     <Link href={`/practice?skill=${assignment.skillId}`} className="block">
       <div className="rounded-2xl bg-card border border-border p-4 hover:border-primary/40 transition-colors">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="font-semibold truncate">{assignment.skillName}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Assigned by {assignment.coachName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("coach.assignedBy", { name: assignment.coachName })}</p>
           </div>
           <span
             className={cn(
@@ -71,12 +77,12 @@ function ClaimedRow({ assignment }: { assignment: ClaimedAssignment }) {
               assignment.completed ? "bg-emerald-500/15 text-emerald-400" : "bg-primary/10 text-primary",
             )}
           >
-            {assignment.completed ? "Completed" : "To do"}
+            {assignment.completed ? t("coach.completed") : t("coach.todo")}
           </span>
         </div>
         {assignment.note && <p className="text-xs text-muted-foreground mt-2">{assignment.note}</p>}
         {!assignment.completed && (
-          <p className="text-xs text-primary mt-2">Tap to practice this drill →</p>
+          <p className="text-xs text-primary mt-2">{t("coach.tapToPractice")}</p>
         )}
       </div>
     </Link>
@@ -85,6 +91,7 @@ function ClaimedRow({ assignment }: { assignment: ClaimedAssignment }) {
 
 export default function CoachPage() {
   const { userStats } = useApp()
+  const { t } = useI18n()
   const [configured, setConfigured] = useState(true)
   const [created, setCreated] = useState<CreatedAssignment[]>([])
   const [claimed, setClaimed] = useState<ClaimedAssignment[]>([])
@@ -123,10 +130,10 @@ export default function CoachPage() {
     setClaimCode(code.toUpperCase())
     claimAssignment(code.trim())
       .then(() => {
-        setNotice("Assignment added to your list!")
+        setNotice(t("coach.claimedNotice"))
         return refresh()
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't claim the assignment."))
+      .catch((err) => setError(err instanceof Error ? err.message : t("coach.claimError")))
   }, [searchParams, refresh])
 
   // Auto-complete claimed assignments once the skill is learned.
@@ -158,16 +165,16 @@ export default function CoachPage() {
       const skill = allSkills.find((s) => s.id === skillId)
       const result = await createAssignment({
         skillId,
-        skillName: skill?.name ?? "Drill",
+        skillName: skill?.name ?? t("coach.drill"),
         sport,
         note: note.trim() || undefined,
       })
-      setNotice(`Assignment created! Code: ${result.code}`)
+      setNotice(t("coach.createdNotice", { code: result.code }))
       setSkillId("")
       setNote("")
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't create the assignment.")
+      setError(err instanceof Error ? err.message : t("coach.createError"))
     } finally {
       setCreating(false)
     }
@@ -181,10 +188,10 @@ export default function CoachPage() {
     try {
       await claimAssignment(claimCode.trim())
       setClaimCode("")
-      setNotice("Assignment added to your list!")
+      setNotice(t("coach.claimedNotice"))
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't claim the assignment.")
+      setError(err instanceof Error ? err.message : t("coach.claimError"))
     } finally {
       setClaiming(false)
     }
@@ -204,9 +211,9 @@ export default function CoachPage() {
     const url = `${window.location.origin}/coach?code=${assignment.code}`
     try {
       await navigator.clipboard.writeText(url)
-      setNotice("Invite link copied!")
+      setNotice(t("coach.linkCopied"))
     } catch {
-      setNotice(`Share this code: ${assignment.code}`)
+      setNotice(t("coach.shareCode", { code: assignment.code }))
     }
   }
 
@@ -215,8 +222,8 @@ export default function CoachPage() {
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-16 max-w-lg md:max-w-5xl mx-auto">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Coach</h1>
-            <p className="text-xs text-muted-foreground">Assign drills, track progress</p>
+            <h1 className="text-lg font-semibold tracking-tight">{t("coach.title")}</h1>
+            <p className="text-xs text-muted-foreground">{t("coach.subtitle")}</p>
           </div>
           <PreceptLogo className="w-8 h-8" />
         </div>
@@ -226,7 +233,7 @@ export default function CoachPage() {
         {!configured && (
           <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
             <p className="text-amber-500 text-sm text-center">
-              Coach mode is unavailable until cloud sync is configured.
+              {t("coach.unavailable")}
             </p>
           </div>
         )}
@@ -235,7 +242,7 @@ export default function CoachPage() {
           <>
             <section className="rounded-2xl bg-card border border-border p-5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Assign a Drill
+                {t("coach.assignDrill")}
               </p>
               <div className="space-y-3">
                 <select
@@ -246,16 +253,16 @@ export default function CoachPage() {
                   }}
                   className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-primary/50"
                 >
-                  <option value="soccer">Soccer</option>
-                  <option value="basketball">Basketball</option>
-                  <option value="tennis">Tennis</option>
+                  <option value="soccer">{t("sport.soccer")}</option>
+                  <option value="basketball">{t("sport.basketball")}</option>
+                  <option value="tennis">{t("sport.tennis")}</option>
                 </select>
                 <select
                   value={skillId}
                   onChange={(e) => setSkillId(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-primary/50"
                 >
-                  <option value="">Select a drill…</option>
+                  <option value="">{t("coach.selectDrill")}</option>
                   {sportSkills.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -265,7 +272,7 @@ export default function CoachPage() {
                 <input
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Optional note for your athlete"
+                  placeholder={t("coach.notePlaceholder")}
                   maxLength={280}
                   className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-primary/50"
                 />
@@ -274,21 +281,21 @@ export default function CoachPage() {
                   disabled={creating || !skillId}
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  {creating ? "Creating..." : "Create Assignment"}
+                  {creating ? t("coach.creating") : t("coach.create")}
                 </Button>
               </div>
             </section>
 
             <section className="rounded-2xl bg-card border border-border p-5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Have an assignment code?
+                {t("coach.haveCode")}
               </p>
               <div className="flex gap-2">
                 <input
                   value={claimCode}
                   onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && handleClaim()}
-                  placeholder="Coach's code"
+                  placeholder={t("coach.coachCode")}
                   maxLength={12}
                   className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono uppercase tracking-widest outline-none focus:border-primary/50"
                 />
@@ -297,7 +304,7 @@ export default function CoachPage() {
                   disabled={claiming || claimCode.trim().length < 4}
                   className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  {claiming ? "Adding..." : "Add"}
+                  {claiming ? t("coach.adding") : t("coach.add")}
                 </Button>
               </div>
             </section>
@@ -305,7 +312,7 @@ export default function CoachPage() {
             {created.length > 0 && (
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  My Assignments ({created.length})
+                  {t("coach.myAssignments", { count: created.length })}
                 </h3>
                 <div className="space-y-3">
                   {created.map((a) => (
@@ -324,7 +331,7 @@ export default function CoachPage() {
             {claimed.length > 0 && (
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  My Drills ({claimed.length})
+                  {t("coach.myDrills", { count: claimed.length })}
                 </h3>
                 <div className="space-y-3">
                   {claimed.map((a) => (
@@ -339,9 +346,9 @@ export default function CoachPage() {
                 <svg className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25v-.008zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007v-.008zm2.502-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008v-.008zM7.5 6.75h9a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-9a.75.75 0 01-.75-.75V7.5a.75.75 0 01.75-.75z" />
                 </svg>
-                <p className="text-muted-foreground text-sm">No assignments yet.</p>
+                <p className="text-muted-foreground text-sm">{t("coach.empty")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Create a drill to share, or claim one with a coach's code.
+                  {t("coach.emptyHint")}
                 </p>
               </div>
             )}
