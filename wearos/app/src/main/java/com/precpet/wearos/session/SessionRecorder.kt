@@ -103,6 +103,9 @@ object SessionRecorder {
         )
     }
 
-    private fun readInt16LE(bytes: ByteArray, offset: Int): Int =
-        (bytes[offset].toInt() and 0xff) or ((bytes[offset + 1].toInt() and 0xff) shl 8)
+    /** Signed little-endian int16 read, matching the TS decoder's `getInt16`. */
+    private fun readInt16LE(bytes: ByteArray, offset: Int): Int {
+        val value = (bytes[offset].toInt() and 0xff) or ((bytes[offset + 1].toInt() and 0xff) shl 8)
+        return if (value and 0x8000 != 0) value - 0x10000 else value
+    }
 }

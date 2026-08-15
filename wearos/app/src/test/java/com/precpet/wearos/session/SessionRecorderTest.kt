@@ -73,6 +73,19 @@ class SessionRecorderTest {
     }
 
     @Test
+    fun `negative axis values decode as signed int16`() {
+        // Regression: readInt16LE was unsigned, so -5 m/s² decoded as ~655.31
+        // and inflated the RMS magnitude. |a| = sqrt(3*25) ≈ 8.660 here.
+        SessionRecorder.start()
+        SessionRecorder.record(packet(0, -5f, -2f))
+        SessionRecorder.record(packet(1, -5f, -2f))
+        val s = SessionRecorder.finalize()!!
+
+        assertEquals(8.660, s.summary.avgAccelMagnitude, 0.01)
+        assertEquals(3.464f, s.summary.peakGyroMagnitude, 0.01f)
+    }
+
+    @Test
     fun `state resets after finalize so a new session can start`() {
         SessionRecorder.start()
         SessionRecorder.record(packet(0, 1f, 2f))
