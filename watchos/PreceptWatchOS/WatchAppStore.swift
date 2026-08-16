@@ -48,6 +48,9 @@ final class WatchAppStore: ObservableObject {
                 self.currentReps = self.recorder.repCount
             }
         }
+        // Mirrors MotionSensorService.onCreate → PreceptMotionStreamer.start:
+        // the sensor must be running for any packets to reach BLE/the recorder.
+        motion.start()
         peripheral.start()
     }
 
