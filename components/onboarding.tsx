@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { PreceptLogo } from "@/components/precept-logo"
 import { useApp } from "@/contexts/app-context"
+import { useI18n } from "@/hooks/use-i18n"
 import { cn } from "@/lib/utils"
 
 interface OnboardingStep {
@@ -14,71 +15,69 @@ interface OnboardingStep {
   icon: React.ReactNode
 }
 
-const steps: OnboardingStep[] = [
-  {
-    title: "Track Your Movement",
-    description:
-      "Precept uses your device's motion sensors to analyze your movement fluidity and technique in real-time.",
-    icon: (
-      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Get Smart Recommendations",
-    description:
-      "Our AI analyzes your performance data and recommends specific skills to practice based on your weaknesses.",
-    icon: (
-      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Watch AI Tutorials",
-    description:
-      "Generate personalized video tutorials using Veo AI to visualize exactly how each skill should be performed.",
-    icon: (
-      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "Master Your Game",
-    description: "Track your progress over time, unlock achievements, and watch your skills transform on the pitch.",
-    icon: (
-      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-        />
-      </svg>
-    ),
-  },
-]
-
 export function Onboarding() {
+  const { t } = useI18n()
   const [currentStep, setCurrentStep] = useState(0)
   const { completeOnboarding } = useApp()
+
+  const steps: OnboardingStep[] = [
+    {
+      title: t("onboarding.step1Title"),
+      description: t("onboarding.step1Desc"),
+      icon: (
+        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      title: t("onboarding.step2Title"),
+      description: t("onboarding.step2Desc"),
+      icon: (
+        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+          />
+        </svg>
+      ),
+    },
+    {
+      title: t("onboarding.step3Title"),
+      description: t("onboarding.step3Desc"),
+      icon: (
+        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      title: t("onboarding.step4Title"),
+      description: t("onboarding.step4Desc"),
+      icon: (
+        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+          />
+        </svg>
+      ),
+    },
+  ]
 
   const isLastStep = currentStep === steps.length - 1
 
@@ -103,7 +102,7 @@ export function Onboarding() {
           <span className="font-semibold">Precept</span>
         </div>
         <button onClick={handleSkip} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          Skip
+          {t("onboarding.skip")}
         </button>
       </div>
 
@@ -136,7 +135,7 @@ export function Onboarding() {
           onClick={handleNext}
           className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {isLastStep ? "Get Started" : "Next"}
+          {isLastStep ? t("onboarding.getStarted") : t("onboarding.next")}
         </Button>
       </div>
     </div>

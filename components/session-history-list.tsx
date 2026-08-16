@@ -1,15 +1,17 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
 import type { PracticeSession } from "@/lib/types"
 import { allSkills } from "@/lib/skills-database"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface SessionHistoryListProps {
     sessions: PracticeSession[]
 }
 
 export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
+    const { t } = useI18n()
+
     // Sort sessions by date (newest first)
     const sortedSessions = [...sessions].sort(
         (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
@@ -21,9 +23,9 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                 <svg className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
-                <p className="font-medium">No practice history yet</p>
+                <p className="font-medium">{t("history.emptyTitle")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                    Complete your first guided session to see it here!
+                    {t("history.emptyHint")}
                 </p>
             </div>
         )
@@ -43,6 +45,15 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                             session.fluidityScores.reduce((a, b) => a + b, 0) / session.fluidityScores.length,
                         )
                         : 0
+                const minutesSince = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
+                const timeLabel =
+                    minutesSince < 1
+                        ? t("dashboard.justNow")
+                        : minutesSince < 60
+                            ? t("dashboard.minAgo", { count: minutesSince })
+                            : minutesSince < 1440
+                                ? t("dashboard.hrAgo", { count: Math.floor(minutesSince / 60) })
+                                : t("dashboard.dayAgo", { count: Math.floor(minutesSince / 1440) })
 
                 return (
                     <div
@@ -67,9 +78,9 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                                     )}
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-sm">{skill?.name || "Practice Session"}</h4>
+                                    <h4 className="font-semibold text-sm">{skill?.name || t("history.sessionTitle")}</h4>
                                     <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(date, { addSuffix: true })}
+                                        {timeLabel}
                                     </p>
                                 </div>
                             </div>
@@ -84,18 +95,18 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                                                 : "bg-red-500/10 text-red-500",
                                     )}
                                 >
-                                    {avgFluidity} Score
+                                    {t("history.score", { score: avgFluidity })}
                                 </span>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border/50">
                             <div className="text-center">
-                                <p className="text-[10px] text-muted-foreground uppercase">Duration</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">{t("history.duration")}</p>
                                 <p className="text-sm font-mono font-medium">{duration}m</p>
                             </div>
                             <div className="text-center border-l border-border/50">
-                                <p className="text-[10px] text-muted-foreground uppercase">Fluidity</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">{t("history.fluidity")}</p>
                                 <div className="flex items-center justify-center gap-1">
                                     <p className="text-sm font-mono font-medium">{avgFluidity}</p>
                                 </div>

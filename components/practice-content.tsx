@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { MotionIndicator } from "@/components/motion-indicator"
 import { Button } from "@/components/ui/button"
 import { useMotionSensor } from "@/hooks/use-motion-sensor"
+import { useI18n } from "@/hooks/use-i18n"
 import { useWearableMotion } from "@/hooks/use-wearable-motion"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
@@ -33,6 +34,7 @@ export function PracticeContent() {
   const wearableMotion = useWearableMotion({ mock: mockWearable })
   const isMobile = typeof window !== "undefined" && (navigator.maxTouchPoints > 1 || /Mobi|Android|iPhone|iPad|iPod|tablet|PlayBook|Silk/i.test(navigator.userAgent))
   const { addSession, finishSession, settings, sessions, atSessionLimit, userStats, activeSport, setActiveSport, updateSettings } = useApp()
+  const { t } = useI18n()
   const activeMotionSource: "phone" | "wearable" = settings.motionSource === "wearable" ? "wearable" : "phone"
   const motion = activeMotionSource === "wearable" ? wearableMotion : phoneMotion
   const { isSupported, isTracking, analysis, startTracking, stopTracking } = motion
@@ -202,11 +204,14 @@ export function PracticeContent() {
 
   // Feedback messages based on performance
   const getEncouragement = (fluidity: number) => {
-    if (fluidity > 80) return "Incredible flow!"
-    if (fluidity > 60) return "Looking good! Keep it smooth"
-    if (fluidity > 40) return "You're getting there!"
-    return "Focus on control and balance"
+    if (fluidity > 80) return t("session.encourageIncredible")
+    if (fluidity > 60) return t("session.encourageGood")
+    if (fluidity > 40) return t("session.encourageGettingThere")
+    return t("session.encourageFocus")
   }
+
+  const sportLabel = (sport: string) =>
+    sport === "soccer" ? t("sport.soccer") : sport === "basketball" ? t("sport.basketball") : t("sport.tennis")
 
   // Filter skills based on user preference
   const sportFiltered = getSkillsBySport(activeSport)
@@ -244,7 +249,7 @@ export function PracticeContent() {
 
   const formatMinutes = (startMs: number, endMs: number) => {
     const mins = Math.max(1, Math.round((endMs - startMs) / 60000))
-    return `${mins} min`
+    return `${mins} ${t("session.minutesUnit")}`
   }
 
   const startPractice = useCallback(async () => {
@@ -351,7 +356,7 @@ export function PracticeContent() {
     async (index: number): Promise<void> => {
       setImportError(null)
       if (atSessionLimit) {
-        setImportError("Session limit reached (10) — delete an older session to free space.")
+        setImportError(t("session.limitError"))
         return
       }
       const stored = await wearableMotion.fetchOfflineSession(index)
@@ -371,11 +376,11 @@ export function PracticeContent() {
         endTime: new Date().toISOString(),
         fluidityScores: [Math.round(metrics.fluidityScore)],
         completed: true,
-        notes: `Imported from watch · ${formatDate(stored.summary.startedAtMs)}`,
+        notes: t("session.importedFromWatch", { date: formatDate(stored.summary.startedAtMs) }),
       }
       finishSession(session, session.fluidityScores)
     },
-    [atSessionLimit, wearableMotion, currentSkill, sessions, activeSport, finishSession],
+    [atSessionLimit, wearableMotion, currentSkill, sessions, activeSport, finishSession, t],
   )
 
   const saveNote = useCallback(() => {
@@ -451,7 +456,7 @@ export function PracticeContent() {
                   <circle cx="12" cy="12" r="10" />
                   <path strokeLinecap="round" d="M12 2v20M2 12h20" opacity={0.4} />
                 </svg>
-                Practice
+                {t("nav.practice")}
               </h1>
               {currentSkill && <p className="text-primary text-sm font-medium animate-slide-up">{currentSkill.name}</p>}
               {programId && (
@@ -460,8 +465,8 @@ export function PracticeContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                     </svg>
-                    Step {drillStepIndex + 1}/{totalProgramSteps}
-                  {currentStep && ` · ${drillReps}/${currentStep.reps} reps`}
+                    {t("session.stepProgress", { current: drillStepIndex + 1, total: totalProgramSteps })}
+                  {currentStep && ` · ${drillReps}/${currentStep.reps} ${t("session.reps")}`}
                 </div>
               )}
             </div>
@@ -491,7 +496,7 @@ export function PracticeContent() {
               }
               return (
                 <div>
-                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Resume Practice</h2>
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t("session.resumePractice")}</h2>
                   <button
                     onClick={handleResume}
                     className="w-full rounded-2xl bg-gradient-to-br from-primary/15 to-card border border-primary/30 p-4 flex items-center gap-4 hover:border-primary/50 transition-colors hover-lift text-left"
@@ -504,7 +509,9 @@ export function PracticeContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-primary uppercase tracking-wider font-medium">
-                        {isOtherSport ? `Last practiced · ${resumeSession.sport}` : "Last practiced"}
+                        {isOtherSport
+                          ? t("session.lastPracticedSport", { sport: sportLabel(resumeSession.sport) })
+                          : t("session.lastPracticed")}
                       </p>
                       <p className="font-semibold truncate">{resumeSkill.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{resumeSkill.category} · {resumeSkill.difficulty}</p>
@@ -518,7 +525,10 @@ export function PracticeContent() {
                       <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                       </svg>
-                      You&apos;re viewing {activeSport}. Resume will switch to {resumeSession.sport} and start this skill.
+                      {t("session.resumeSportSwitch", {
+                        activeSport: sportLabel(activeSport),
+                        resumeSport: sportLabel(resumeSession.sport),
+                      })}
                     </p>
                   )}
                 </div>
@@ -527,7 +537,7 @@ export function PracticeContent() {
 
             {/* Quick Pick — top skills for active sport */}
             <div>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Start</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t("session.quickStart")}</h2>
               <div className="grid grid-cols-2 gap-3">
                 {filteredSkills.slice(0, 4).map((skill) => (
                   <button
@@ -557,7 +567,7 @@ export function PracticeContent() {
                 onClick={() => setFullSkillList(true)}
                 className="text-xs text-primary hover:underline"
               >
-                Browse all {filteredSkills.length} skills →
+                {t("session.browseAllSkills", { count: filteredSkills.length })}
               </button>
             </div>
           </div>
@@ -567,8 +577,8 @@ export function PracticeContent() {
         {showSkillPicker && fullSkillList && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">All Skills</h2>
-              <button onClick={() => setFullSkillList(false)} className="text-xs text-primary hover:underline">← Back</button>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("practice.allSkills")}</h2>
+              <button onClick={() => setFullSkillList(false)} className="text-xs text-primary hover:underline">← {t("session.back")}</button>
             </div>
             {filteredSkills.map((skill, i) => (
               <button
@@ -615,7 +625,7 @@ export function PracticeContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <h2 className="text-xl font-bold">Switch Skill</h2>
+                    <h2 className="text-xl font-bold">{t("session.switchSkill")}</h2>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -663,8 +673,8 @@ export function PracticeContent() {
               </svg>
             </div>
 
-            <h2 className="text-2xl font-bold mb-2">Session Complete!</h2>
-            <p className="text-muted-foreground mb-8">You crushed that practice session! Here is how you did:</p>
+            <h2 className="text-2xl font-bold mb-2">{t("session.sessionComplete")}</h2>
+            <p className="text-muted-foreground mb-8">{t("session.completeSubtitle")}</p>
 
             {hasNewBest && (
               <div className="mb-6 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 p-4 animate-bounce-in">
@@ -672,13 +682,13 @@ export function PracticeContent() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
                   </svg>
-                  New Personal Best!
+                  {t("session.newPersonalBest")}
                 </p>
                 <p className="text-xs text-amber-500/80">
                   {[
-                    newBests.avg && "Highest average flow",
-                    newBests.peak && "New peak flow",
-                    newBests.duration && "Longest session",
+                    newBests.avg && t("session.bestAvgFlow"),
+                    newBests.peak && t("session.bestPeakFlow"),
+                    newBests.duration && t("session.bestDuration"),
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -691,12 +701,12 @@ export function PracticeContent() {
                 {goalMet ? (
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                    Goal met!
+                    {t("session.goalMet")}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {Math.max(0, goalMinutes - Math.floor(sessionTime / 60))}min to reach your goal
+                    {t("session.minutesToGoal", { minutes: Math.max(0, goalMinutes - Math.floor(sessionTime / 60)) })}
                   </span>
                 )}
               </div>
@@ -705,15 +715,15 @@ export function PracticeContent() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="p-3 bg-secondary/30 rounded-2xl">
                 <p className="text-2xl font-bold font-mono text-primary">{formatTime(sessionTime)}</p>
-                <p className="text-[10px] uppercase tracking-wider opacity-60">Time</p>
+                <p className="text-[10px] uppercase tracking-wider opacity-60">{t("session.time")}</p>
               </div>
               <div className="p-3 bg-secondary/30 rounded-2xl">
                 <p className="text-2xl font-bold font-mono text-foreground">{avgFluidity}</p>
-                <p className="text-[10px] uppercase tracking-wider opacity-60">Avg Flow</p>
+                <p className="text-[10px] uppercase tracking-wider opacity-60">{t("session.avgFlow")}</p>
               </div>
               <div className="p-3 bg-secondary/30 rounded-2xl">
                 <p className="text-2xl font-bold font-mono text-emerald-400">{peakFluidity}</p>
-                <p className="text-[10px] uppercase tracking-wider opacity-60">Peak</p>
+                <p className="text-[10px] uppercase tracking-wider opacity-60">{t("session.peak")}</p>
               </div>
             </div>
 
@@ -729,14 +739,14 @@ export function PracticeContent() {
                     />
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Flow Consistency</p>
+                <p className="text-xs text-muted-foreground mt-2">{t("session.flowConsistency")}</p>
               </div>
             )}
 
             {/* Fluidity Zone Breakdown */}
             {fluidityHistory.length > 0 && (
               <div className="mb-8 text-left">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 text-center">Flow Zones</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 text-center">{t("session.flowZones")}</p>
                 <div className="flex h-3 rounded-full overflow-hidden mb-3">
                   {fluidityZones.high > 0 && <div className="bg-emerald-500" style={{ width: `${fluidityZones.high}%` }} />}
                   {fluidityZones.mid > 0 && <div className="bg-amber-500" style={{ width: `${fluidityZones.mid}%` }} />}
@@ -745,15 +755,15 @@ export function PracticeContent() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-sm font-bold text-emerald-500">{fluidityZones.high}%</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">High</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">{t("session.zoneHigh")}</p>
                   </div>
                   <div>
                     <p className="text-sm font-bold text-amber-500">{fluidityZones.mid}%</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Mid</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">{t("session.zoneMid")}</p>
                   </div>
                   <div>
                     <p className="text-sm font-bold text-red-500">{fluidityZones.low}%</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Low</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">{t("session.zoneLow")}</p>
                   </div>
                 </div>
               </div>
@@ -762,7 +772,7 @@ export function PracticeContent() {
             {/* Session Notes */}
             <div className="mb-8 text-left">
               <label htmlFor="session-notes" className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">
-                Session Notes
+                {t("session.notes")}
               </label>
               <textarea
                 id="session-notes"
@@ -770,7 +780,7 @@ export function PracticeContent() {
                 onChange={(e) => setSessionNotes(e.target.value)}
                 onBlur={saveNote}
                 rows={3}
-                placeholder="How did it feel? What to focus on next time?"
+                placeholder={t("session.notesPlaceholder")}
                 className="w-full rounded-xl bg-secondary/30 border border-border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -789,15 +799,15 @@ export function PracticeContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                       </svg>
                     </div>
-                    <p className="text-sm font-semibold">Analyze Your Technique</p>
-                    <p className="text-xs text-muted-foreground mt-1">Record or upload a clip for AI-powered feedback</p>
+                    <p className="text-sm font-semibold">{t("session.analyzeTechnique")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("session.analyzeTechniqueDesc")}</p>
                   </button>
                 ) : (
                   <div className="rounded-2xl border border-border bg-card p-5 text-center">
-                    <p className="text-sm font-medium mb-2">Unlock AI Video Analysis</p>
-                    <p className="text-xs text-muted-foreground mb-3">Get AI-powered feedback on your technique form</p>
+                    <p className="text-sm font-medium mb-2">{t("session.unlockAnalysis")}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{t("session.unlockAnalysisDesc")}</p>
                     <Button variant="outline" size="sm" className="rounded-xl text-xs" onClick={() => router.push("/profile")}>
-                      Upgrade to Pro
+                      {t("profile.upgrade")}
                     </Button>
                   </div>
                 )}
@@ -826,15 +836,15 @@ export function PracticeContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                   </svg>
                 </div>
-                <p className="text-sm font-medium">Analyzing your technique...</p>
-                <p className="text-xs text-muted-foreground mt-1">AI is reviewing your {currentSkill?.name} form</p>
+                <p className="text-sm font-medium">{t("session.analyzing")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("session.analyzingDesc", { skill: currentSkill?.name ?? "" })}</p>
               </div>
             )}
 
             {videoAnalysis.state === "error" && videoAnalysis.error && (
               <div className="mb-8 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-center">
                 <p className="text-sm text-red-500">{videoAnalysis.error}</p>
-                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={videoAnalysis.reset}>Try Again</Button>
+                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={videoAnalysis.reset}>{t("session.tryAgain")}</Button>
               </div>
             )}
 
@@ -846,15 +856,15 @@ export function PracticeContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
                   </div>
-                  <p className="text-sm font-semibold">AI Analysis Complete</p>
+                  <p className="text-sm font-semibold">{t("session.analysisComplete")}</p>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{videoAnalysis.result.summary}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Form", value: videoAnalysis.result.techniqueForm },
-                    { label: "Control", value: videoAnalysis.result.ballControlQuality },
-                    { label: "Accuracy", value: videoAnalysis.result.passAccuracy },
-                    { label: "Power", value: videoAnalysis.result.shotsOnTarget },
+                    { label: t("session.metricForm"), value: videoAnalysis.result.techniqueForm },
+                    { label: t("session.metricControl"), value: videoAnalysis.result.ballControlQuality },
+                    { label: t("session.metricAccuracy"), value: videoAnalysis.result.passAccuracy },
+                    { label: t("session.metricPower"), value: videoAnalysis.result.shotsOnTarget },
                   ].map((item) => (
                     <div key={item.label} className="bg-secondary/30 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-1">
@@ -868,17 +878,17 @@ export function PracticeContent() {
                   ))}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-3 text-center">
-                  Confidence: {Math.round(videoAnalysis.result.confidence * 100)}% · Stats updated on profile
+                  {t("session.confidenceStats", { percent: Math.round(videoAnalysis.result.confidence * 100) })}
                 </p>
               </div>
             )}
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={resetPractice} className="flex-1 h-12 rounded-xl">
-                One More?
+                {t("session.oneMore")}
               </Button>
               <Button onClick={() => router.push("/progress")} className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                See Progress
+                {t("session.seeProgress")}
               </Button>
             </div>
           </div>
@@ -910,13 +920,13 @@ export function PracticeContent() {
                   ))}
                 </div>
 
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Step {drillStepIndex + 1}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("programs.step", { number: drillStepIndex + 1 })}</p>
                 <p className="text-sm text-muted-foreground mb-4">{currentStep.instruction}</p>
 
                 {/* Rest phase between drills */}
                 {drillPhase === "resting" && (
                   <div className="py-2 animate-slide-up">
-                    <p className="text-xs uppercase tracking-wider text-emerald-500 font-semibold mb-3">Rest &amp; Recover</p>
+                    <p className="text-xs uppercase tracking-wider text-emerald-500 font-semibold mb-3">{t("session.restRecover")}</p>
                     <div className="relative w-36 h-36 mx-auto mb-4">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--secondary)" strokeWidth="6" />
@@ -936,7 +946,7 @@ export function PracticeContent() {
                       onClick={skipRest}
                       className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
                     >
-                      Skip Rest
+                      {t("session.skipRest")}
                     </button>
                   </div>
                 )}
@@ -960,7 +970,7 @@ export function PracticeContent() {
                         onClick={startDrill}
                         className="w-20 h-20 rounded-full bg-primary text-primary-foreground text-lg font-bold flex items-center justify-center shadow-lg shadow-primary/30 hover:scale-105 transition-transform"
                       >
-                        Go
+                        {t("session.go")}
                       </button>
                     ) : (
                       <div className="text-center">
@@ -975,7 +985,7 @@ export function PracticeContent() {
                 {(drillPhase === "drilling" || drillPhase === "step-complete") && (
                   <div className="flex items-center justify-center gap-6">
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Reps</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("session.reps")}</p>
                       <div className="flex items-center gap-3">
                         <button
                           onClick={tapRep}
@@ -1002,7 +1012,7 @@ export function PracticeContent() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
-                      Step complete!
+                      {t("session.stepComplete")}
                     </p>
                     <button
                       onClick={advanceStep}
@@ -1010,12 +1020,12 @@ export function PracticeContent() {
                     >
                       {drillStepIndex + 1 >= totalProgramSteps ? (
                         <span className="inline-flex items-center gap-1.5">
-                          Complete Program
+                          {t("session.completeProgram")}
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </span>
-                      ) : "Next Step →"}
+                      ) : t("session.nextStep")}
                     </button>
                   </div>
                 )}
@@ -1025,11 +1035,11 @@ export function PracticeContent() {
             <div className="rounded-3xl bg-card border border-border p-6 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Drill</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("session.drill")}</p>
                   <h2 className="text-xl font-bold">{currentSkill.name}</h2>
                 </div>
                 <button onClick={() => { setShowSkillPicker(true); setFullSkillList(true) }} className="text-primary text-xs font-bold uppercase tracking-wide bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors">
-                  Switch
+                  {t("session.switch")}
                 </button>
               </div>
 
@@ -1073,11 +1083,11 @@ export function PracticeContent() {
             {/* Motion Source */}
             <div className="rounded-2xl bg-card border border-border p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Motion Source</h3>
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("session.motionSource")}</h3>
                 {wearableMotion.connectionStatus === "connected" && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live
+                    {t("session.live")}
                   </span>
                 )}
               </div>
@@ -1092,7 +1102,7 @@ export function PracticeContent() {
                       : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
-                  Phone
+                  {t("session.phone")}
                 </button>
                 <button
                   onClick={() => updateSettings({ motionSource: "wearable" })}
@@ -1103,7 +1113,7 @@ export function PracticeContent() {
                       : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
-                  Smart Watch
+                  {t("session.smartWatch")}
                 </button>
               </div>
 
@@ -1114,7 +1124,7 @@ export function PracticeContent() {
                       <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                       </svg>
-                      Bluetooth watches can't be reached from the iOS browser. On iPhone, open the Precept app from the App Store, or use an Android phone with Chrome or Edge.
+                      {t("session.iosBleNote")}
                     </p>
                   )}
                   {wearableMotion.connectionStatus === "connected" ? (
@@ -1127,14 +1137,16 @@ export function PracticeContent() {
                           </svg>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate">{wearableMotion.deviceName ?? "Watch connected"}</p>
+                          <p className="text-sm font-semibold truncate">{wearableMotion.deviceName ?? t("session.watchConnected")}</p>
                           <p className="text-xs text-muted-foreground">
-                            {wearableMotion.battery !== null ? `Battery ${wearableMotion.battery}%` : "Ready to track"}
+                            {wearableMotion.battery !== null
+                              ? t("session.battery", { percent: wearableMotion.battery })
+                              : t("session.readyToTrack")}
                           </p>
                         </div>
                       </div>
                       <button onClick={wearableMotion.disconnect} className="text-xs text-red-500 hover:underline flex-shrink-0 ml-2">
-                        Disconnect
+                        {t("session.disconnect")}
                       </button>
                     </div>
                   ) : (
@@ -1147,8 +1159,8 @@ export function PracticeContent() {
                         className="w-full rounded-xl text-xs"
                       >
                         {wearableMotion.connectionStatus === "scanning" || wearableMotion.connectionStatus === "connecting"
-                          ? "Looking for your watch..."
-                          : "Connect Watch"}
+                          ? t("session.lookingForWatch")
+                          : t("session.connectWatch")}
                       </Button>
                       {wearableMotion.error && (
                         <p className="text-xs text-red-500 mt-2">{wearableMotion.error.message}</p>
@@ -1162,38 +1174,37 @@ export function PracticeContent() {
             {activeMotionSource === "wearable" && (
               <div className="rounded-2xl bg-card border border-border p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Offline Sessions</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("session.offlineSessions")}</h3>
                   {wearableMotion.hasSessionSync && (
                     <button
                       onClick={() => void wearableMotion.syncSessions()}
                       disabled={wearableMotion.syncingSessions}
                       className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
                     >
-                      {wearableMotion.syncingSessions ? "Syncing..." : "Refresh"}
+                      {wearableMotion.syncingSessions ? t("session.syncing") : t("session.refresh")}
                     </button>
                   )}
                 </div>
 
                 {!wearableMotion.hasSessionSync ? (
                   <p className="text-xs text-muted-foreground">
-                    Sessions recorded on your watch while offline will be synced here. The iPhone app supports this soon —
-                    for now they stay safely on the watch.
+                    {t("session.offlineSyncNote")}
                   </p>
                 ) : wearableMotion.connectionStatus !== "connected" ? (
                   <p className="text-xs text-muted-foreground">
-                    Connect your watch to see sessions recorded without a phone.
+                    {t("session.connectWatchToSync")}
                   </p>
                 ) : wearableMotion.offlineSessions.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
                     {wearableMotion.syncingSessions
-                      ? "Checking your watch..."
-                      : "No saved sessions on the watch yet. Hit Record offline on the watch, then sync here."}
+                      ? t("session.checkingWatch")
+                      : t("session.noOfflineSessions")}
                   </p>
                 ) : (
                   <div className="space-y-2">
                     {atSessionLimit && (
                       <p className="text-xs text-amber-600">
-                        Session limit reached (10) — imports are paused until you delete an older session.
+                        {t("session.importPaused")}
                       </p>
                     )}
                     {wearableMotion.offlineSessions.map((s) => (
@@ -1206,8 +1217,8 @@ export function PracticeContent() {
                             {formatDate(s.startedAtMs)} · {formatMinutes(s.startedAtMs, s.endedAtMs)}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {s.repCount ? `${s.repCount} reps · ` : ""}
-                            {s.sampleCount} samples · {s.avgAccelMagnitude.toFixed(1)} m/s²
+                            {s.repCount ? `${s.repCount} ${t("session.reps")} · ` : ""}
+                            {s.sampleCount} {t("session.samples")} · {s.avgAccelMagnitude.toFixed(1)} m/s²
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1216,13 +1227,13 @@ export function PracticeContent() {
                             disabled={atSessionLimit || wearableMotion.syncingSessions}
                             className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
                           >
-                            Import
+                            {t("session.import")}
                           </button>
                           <button
                             onClick={() => void wearableMotion.deleteOfflineSession(s.index)}
                             className="text-[11px] font-semibold text-red-500 hover:underline"
                           >
-                            Delete
+                            {t("session.delete")}
                           </button>
                         </div>
                       </div>
@@ -1232,7 +1243,7 @@ export function PracticeContent() {
                         onClick={() => void wearableMotion.clearOfflineSessions()}
                         className="text-[11px] font-semibold text-muted-foreground hover:text-red-500 hover:underline"
                       >
-                        Clear all
+                        {t("session.clearAll")}
                       </button>
                     )}
                     {importError && <p className="text-xs text-red-500">{importError}</p>}
@@ -1248,7 +1259,7 @@ export function PracticeContent() {
             {/* Goal Setting */}
             {currentSkill && (
               <div className="rounded-2xl bg-card border border-border p-5">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Set a Goal</h3>
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">{t("session.setGoal")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {[5, 10, 15].map((mins) => (
                     <button
@@ -1261,7 +1272,7 @@ export function PracticeContent() {
                           : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
                       )}
                     >
-                      {mins} min
+                      {mins} {t("session.minutesUnit")}
                     </button>
                   ))}
                   <button
@@ -1273,7 +1284,7 @@ export function PracticeContent() {
                         : "bg-secondary/50 border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
                     )}
                   >
-                    No goal
+                    {t("session.noGoal")}
                   </button>
                 </div>
               </div>
@@ -1287,7 +1298,7 @@ export function PracticeContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
                     <p className="text-amber-600 text-sm">
-                      Motion sensors unavailable. For the best coaching experience, use a mobile device!
+                      {t("session.motionUnavailable")}
                     </p>
                   </div>
                 )}
@@ -1297,7 +1308,7 @@ export function PracticeContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
                     <p className="text-amber-600 text-sm">
-                      Practice requires a mobile device with motion sensors. Open this page on your phone for a real coaching experience.
+                      {t("session.motionRequiresMobile")}
                     </p>
                   </div>
                 )}
@@ -1307,7 +1318,7 @@ export function PracticeContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                     <p className="text-red-600 text-sm">
-                      Motion access denied. We need that to track your sweet moves! Enable it in settings.
+                      {t("session.motionDenied")}
                     </p>
                   </div>
                 )}
@@ -1319,8 +1330,8 @@ export function PracticeContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                 </svg>
                 <div className="text-sm">
-                  <p className="text-violet-600 font-medium">Session limit reached</p>
-                  <p className="text-muted-foreground mt-0.5">You've used all {sessions.length} free sessions. Upgrade to Precept Pro for unlimited practice.</p>
+                  <p className="text-violet-600 font-medium">{t("session.limitReached")}</p>
+                  <p className="text-muted-foreground mt-0.5">{t("session.limitMessage", { count: sessions.length })}</p>
                 </div>
               </div>
             )}
@@ -1344,22 +1355,22 @@ export function PracticeContent() {
                 >
                   {currentSkill ? (
                     <span className="inline-flex items-center gap-2">
-                      Let's Do This!
+                      {t("session.letsDoThis")}
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                       </svg>
                     </span>
-                  ) : "Pick a Drill"}
+                  ) : t("session.pickDrill")}
                 </Button>
               )}
 
               {practiceState === "active" && (
                 <div className="flex gap-4">
                   <Button variant="outline" onClick={pausePractice} className="flex-1 h-14 rounded-2xl bg-card border-2 font-semibold">
-                    Pause
+                    {t("session.pause")}
                   </Button>
                   <Button onClick={endPractice} className="flex-1 h-14 rounded-2xl bg-destructive text-white font-semibold shadow-lg shadow-destructive/20">
-                    Finish
+                    {t("session.finish")}
                   </Button>
                 </div>
               )}
@@ -1367,10 +1378,10 @@ export function PracticeContent() {
               {practiceState === "paused" && (
                 <div className="flex gap-4">
                   <Button variant="outline" onClick={endPractice} className="flex-1 h-14 rounded-2xl font-semibold">
-                    Stop
+                    {t("session.stop")}
                   </Button>
                   <Button onClick={resumePractice} className="flex-1 h-14 rounded-2xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25">
-                    Resume
+                    {t("session.resume")}
                   </Button>
                 </div>
               )}

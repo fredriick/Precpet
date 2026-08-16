@@ -3,6 +3,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import type { PracticeSession } from "@/lib/types"
 import { format, startOfDay, isSameDay, addDays } from "date-fns"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface WeeklyActivityChartProps {
   sessions: PracticeSession[]
@@ -18,6 +19,7 @@ function getMonday(date: Date): Date {
 }
 
 export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
+  const { t } = useI18n()
   const today = startOfDay(new Date())
   const monday = getMonday(today)
 
@@ -49,7 +51,7 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
       return (
         <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
           <p className="font-medium text-foreground">{data.fullDate}</p>
-          <p className="text-primary font-mono">{data.minutes}m practiced</p>
+          <p className="text-primary font-mono">{t("chart.minutesPracticed", { minutes: data.minutes })}</p>
         </div>
       )
     }
@@ -58,7 +60,7 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
 
   return (
     <div className="rounded-2xl bg-card border border-border p-5">
-      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Weekly Activity</h3>
+      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">{t("chart.weeklyActivity")}</h3>
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={days} margin={{ top: 0, right: 0, bottom: 0, left: -12 }}>
@@ -77,7 +79,7 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
         </ResponsiveContainer>
       </div>
       {days.every((d) => d.minutes === 0) && (
-        <p className="text-center text-xs text-muted-foreground mt-2">No practice sessions this week</p>
+        <p className="text-center text-xs text-muted-foreground mt-2">{t("chart.noSessions")}</p>
       )}
     </div>
   )

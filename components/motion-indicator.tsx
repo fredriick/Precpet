@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface MotionIndicatorProps {
   fluidityScore: number
@@ -10,6 +11,8 @@ interface MotionIndicatorProps {
 }
 
 export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking }: MotionIndicatorProps) {
+  const { t } = useI18n()
+
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-primary"
     if (score >= 40) return "text-amber-500"
@@ -17,16 +20,16 @@ export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 80) return "Excellent"
-    if (score >= 60) return "Good"
-    if (score >= 40) return "Fair"
-    return "Needs Work"
+    if (score >= 80) return t("motion.excellent")
+    if (score >= 60) return t("motion.good")
+    if (score >= 40) return t("motion.fair")
+    return t("motion.needsWork")
   }
 
   return (
     <div className="rounded-2xl bg-card p-6 border border-border">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Motion Analysis</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("motion.title")}</h3>
         <div
           className={cn(
             "h-2 w-2 rounded-full",
@@ -40,7 +43,7 @@ export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking
           {/* Fluidity Score */}
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-muted-foreground text-sm">Fluidity</span>
+              <span className="text-muted-foreground text-sm">{t("motion.fluidity")}</span>
               <span className={cn("text-3xl font-bold font-mono", getScoreColor(fluidityScore))}>{fluidityScore}</span>
             </div>
             <div className="h-2 rounded-full bg-secondary overflow-hidden">
@@ -55,7 +58,7 @@ export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking
           {/* Intensity */}
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-muted-foreground text-sm">Intensity</span>
+              <span className="text-muted-foreground text-sm">{t("motion.intensity")}</span>
               <span className="text-xl font-semibold font-mono text-foreground">{intensity}%</span>
             </div>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
@@ -71,7 +74,7 @@ export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking
                 isActive ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground",
               )}
             >
-              {isActive ? "In Motion" : "Stationary"}
+              {isActive ? t("motion.inMotion") : t("motion.stationary")}
             </div>
           </div>
         </div>
@@ -87,8 +90,8 @@ export function MotionIndicator({ fluidityScore, intensity, isActive, isTracking
               />
             </svg>
           </div>
-          <p className="text-muted-foreground text-sm">Motion tracking inactive</p>
-          <p className="text-muted-foreground/60 text-xs mt-1">Start a practice session to begin</p>
+          <p className="text-muted-foreground text-sm">{t("motion.inactive")}</p>
+          <p className="text-muted-foreground/60 text-xs mt-1">{t("motion.startHint")}</p>
         </div>
       )}
     </div>

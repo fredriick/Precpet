@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import { getStreakStatus } from "@/lib/storage"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/hooks/use-i18n"
 import type { PracticeSession } from "@/lib/types"
 
 function toLocalDate(iso: string): string {
@@ -54,13 +55,14 @@ interface StreakWidgetProps {
 
 export function StreakWidget({ sessions, registeredAt }: StreakWidgetProps) {
   const { current, longest, daysUntilBreak, isActive } = getStreakStatus()
+  const { t } = useI18n()
 
   const getMotivationalMessage = () => {
-    if (!isActive) return "Start a new streak today!"
-    if (current === 1) return "Great start! Keep it going!"
-    if (current >= 7) return "You're unstoppable!"
-    if (current >= 3) return "You're on fire! Keep the momentum!"
-    return "Building consistency!"
+    if (!isActive) return t("streak.startNew")
+    if (current === 1) return t("streak.greatStart")
+    if (current >= 7) return t("streak.unstoppable")
+    if (current >= 3) return t("streak.onFire")
+    return t("streak.building")
   }
 
   const todayKey = toKey(new Date())
@@ -126,12 +128,12 @@ export function StreakWidget({ sessions, registeredAt }: StreakWidgetProps) {
             </span>
             <div>
               <p className="text-3xl font-bold drop-shadow-sm">{current}</p>
-              <p className="text-xs opacity-90 font-medium">day streak</p>
+              <p className="text-xs opacity-90 font-medium">{t("streak.dayStreak")}</p>
             </div>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs opacity-90 font-medium">Best Streak</p>
+          <p className="text-xs opacity-90 font-medium">{t("dashboard.longestStreak")}</p>
           <p className="text-xl font-bold drop-shadow-sm">{longest}</p>
         </div>
       </div>
@@ -140,7 +142,15 @@ export function StreakWidget({ sessions, registeredAt }: StreakWidgetProps) {
       <div className="mb-3">
         {/* Day-of-week header */}
         <div className="flex gap-1 mb-1 pl-0">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label, i) => (
+          {[
+            t("chart.monday"),
+            t("chart.tuesday"),
+            t("chart.wednesday"),
+            t("chart.thursday"),
+            t("chart.friday"),
+            t("chart.saturday"),
+            t("chart.sunday"),
+          ].map((label, i) => (
             <div key={i} className="flex-1 text-center">
               <p className="text-[10px] opacity-70 font-semibold">{label}</p>
             </div>
@@ -192,7 +202,7 @@ export function StreakWidget({ sessions, registeredAt }: StreakWidgetProps) {
             <svg className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866 1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
-            Practice today to keep your streak alive!
+            {t("streak.keepAlive")}
           </p>
         </div>
       )}

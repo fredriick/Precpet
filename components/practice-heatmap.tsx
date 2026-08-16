@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { startOfDay, subDays, format } from "date-fns"
+import { useI18n } from "@/hooks/use-i18n"
 import type { PracticeSession } from "@/lib/types"
 
 const WEEKS = 12
@@ -15,6 +16,7 @@ function levelColor(level: number): string {
 
 export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
   const [hovered, setHovered] = useState<{ date: Date; count: number; x: number; y: number } | null>(null)
+  const { t } = useI18n()
 
   const { cells, maxCount } = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -61,7 +63,7 @@ export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
         <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
         </svg>
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Practice Activity</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("heatmap.practiceActivity")}</h3>
       </div>
 
       <div className="relative flex gap-1 overflow-x-auto scrollbar-hide">
@@ -105,7 +107,7 @@ export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
             <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
               <p className="font-medium text-foreground">{format(hovered.date, "MMM d, yyyy")}</p>
               <p className="text-primary font-mono">
-                {hovered.count} session{hovered.count === 1 ? "" : "s"}
+                {hovered.count === 1 ? t("heatmap.session", { count: 1 }) : t("dashboard.sessions", { count: hovered.count })}
               </p>
             </div>
           </div>
@@ -113,11 +115,11 @@ export function PracticeHeatmap({ sessions }: { sessions: PracticeSession[] }) {
       </div>
 
       <div className="flex items-center justify-end gap-1.5 mt-3 text-xs text-muted-foreground">
-        <span>Less</span>
+        <span>{t("heatmap.less")}</span>
         {[0, 1, 2, 3, 4].map((l) => (
           <div key={l} className="w-3 h-3 rounded-sm" style={{ backgroundColor: levelColor(l) }} />
         ))}
-        <span>More</span>
+        <span>{t("heatmap.more")}</span>
       </div>
     </div>
   )

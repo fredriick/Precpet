@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/hooks/use-i18n"
 import type { Sport } from "@/lib/types"
 
 interface VideoRecorderProps {
@@ -84,6 +85,7 @@ async function compressBlob(raw: Blob): Promise<Blob> {
 }
 
 export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, sport }: VideoRecorderProps) {
+  const { t } = useI18n()
   const [view, setView] = useState<"choose" | "recording" | "preview" | "uploading">(mode === "upload" ? "choose" : "choose")
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null)
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null)
@@ -130,7 +132,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
       setCameraReady(true)
       setView("recording")
     } catch {
-      setError("Camera access denied. Please allow camera permissions and try again.")
+      setError(t("recorder.cameraDenied"))
     }
   }, [])
 
@@ -183,11 +185,11 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith("video/")) {
-      setError("Please select a video file.")
+      setError(t("recorder.selectVideoFile"))
       return
     }
     if (file.size > 50 * 1024 * 1024) {
-      setError("Video must be under 50MB.")
+      setError(t("recorder.videoTooLarge"))
       return
     }
     setRecordedBlob(file)
@@ -202,7 +204,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
       const compressed = await compressBlob(recordedBlob)
       onVideoSelected(compressed)
     } catch {
-      setError("Failed to process video. Please try again.")
+      setError(t("recorder.processFailed"))
       setView("preview")
     }
   }, [recordedBlob, onVideoSelected])
@@ -227,9 +229,9 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-1">Analyze Your Technique</h3>
+            <h3 className="font-semibold mb-1">{t("recorder.analyzeTitle")}</h3>
             <p className="text-sm text-muted-foreground">
-              Record or upload a clip of your {skillName} practice for AI-powered analysis
+              {t("recorder.recordOrUpload", { skillName })}
             </p>
           </div>
 
@@ -244,7 +246,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                 </svg>
-                Record
+                {t("recorder.record")}
               </Button>
             )}
             {(mode === "upload" || mode === "both") && (
@@ -252,7 +254,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
                 <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
-                Upload
+                {t("recorder.upload")}
               </Button>
             )}
           </div>
@@ -265,7 +267,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
             className="hidden"
           />
           <Button variant="ghost" onClick={onCancel} className="w-full">
-            Cancel
+            {t("recorder.cancel")}
           </Button>
         </div>
       )}
@@ -288,16 +290,16 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
           <div className="flex gap-3">
             {recorderRef.current?.state === "recording" ? (
               <Button onClick={stopRecording} className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white">
-                Stop Recording
+                {t("recorder.stopRecording")}
               </Button>
             ) : (
               <Button onClick={startRecording} disabled={!cameraReady} className="flex-1 h-12 rounded-xl">
-                Start Recording
+                {t("recorder.startRecording")}
               </Button>
             )}
           </div>
           <Button variant="ghost" onClick={() => { stopStream(); setView("choose"); }} className="w-full">
-            Back
+            {t("recorder.back")}
           </Button>
         </div>
       )}
@@ -311,13 +313,13 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
           <div className="flex gap-3">
             <Button variant="outline" onClick={handleRetake} className="flex-1 h-12 rounded-xl">
-              Retake
+              {t("recorder.retake")}
             </Button>
             <Button onClick={handleConfirm} className="flex-1 h-12 rounded-xl">
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              Analyze
+              {t("recorder.analyze")}
             </Button>
           </div>
         </div>
@@ -332,8 +334,8 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
             </svg>
           </div>
           <div>
-            <p className="font-medium">Analyzing your technique...</p>
-            <p className="text-sm text-muted-foreground mt-1">AI is reviewing your {skillName} form</p>
+            <p className="font-medium">{t("recorder.analyzing")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("recorder.aiReviewing", { skillName })}</p>
           </div>
         </div>
       )}
