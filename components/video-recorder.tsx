@@ -84,7 +84,7 @@ async function compressBlob(raw: Blob): Promise<Blob> {
   return new Blob(chunks, { type: mimeType || "video/webm" })
 }
 
-export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, sport }: VideoRecorderProps) {
+export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName }: VideoRecorderProps) {
   const { t } = useI18n()
   const [view, setView] = useState<"choose" | "recording" | "preview" | "uploading">(mode === "upload" ? "choose" : "choose")
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null)
@@ -136,6 +136,17 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
     }
   }, [])
 
+  const stopRecording = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop()
+    }
+    stopStream()
+  }, [stopStream])
+
   const startRecording = useCallback(() => {
     if (!streamRef.current) return
     chunksRef.current = []
@@ -168,18 +179,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName, spor
         return prev - 1
       })
     }, 1000)
-  }, [])
-
-  const stopRecording = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.stop()
-    }
-    stopStream()
-  }, [stopStream])
+  }, [stopRecording])
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { SUPPORTED_LOCALES, LOCALE_NAMES, translate, type TranslationKey } from "@/lib/i18n"
+import { SUPPORTED_LOCALES, LOCALE_NAMES, translate } from "@/lib/i18n"
 
 describe("translate", () => {
   it("returns the English string for the en locale", () => {

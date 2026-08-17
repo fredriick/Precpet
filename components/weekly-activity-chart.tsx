@@ -18,6 +18,20 @@ function getMonday(date: Date): Date {
   return d
 }
 
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { fullDate: string; minutes: number } }> }) {
+  const { t } = useI18n()
+  if (active && payload && payload.length) {
+    const data = payload[0].payload
+    return (
+      <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
+        <p className="font-medium text-foreground">{data.fullDate}</p>
+        <p className="text-primary font-mono">{t("chart.minutesPracticed", { minutes: data.minutes })}</p>
+      </div>
+    )
+  }
+  return null
+}
+
 export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
   const { t } = useI18n()
   const today = startOfDay(new Date())
@@ -45,19 +59,6 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
 
   const maxMinutes = Math.max(...days.map((d) => d.minutes), 1)
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload
-      return (
-        <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
-          <p className="font-medium text-foreground">{data.fullDate}</p>
-          <p className="text-primary font-mono">{t("chart.minutesPracticed", { minutes: data.minutes })}</p>
-        </div>
-      )
-    }
-    return null
-  }
-
   return (
     <div className="rounded-2xl bg-card border border-border p-5">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">{t("chart.weeklyActivity")}</h3>
@@ -66,7 +67,7 @@ export function WeeklyActivityChart({ sessions }: WeeklyActivityChartProps) {
           <BarChart data={days} margin={{ top: 0, right: 0, bottom: 0, left: -12 }}>
             <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.6 0 0)", fontSize: 11 }} dy={6} />
             <YAxis hide domain={[0, maxMinutes]} />
-            <Tooltip content={<CustomTooltip />} cursor={false} />
+            <Tooltip content={<ChartTooltip />} cursor={false} />
             <Bar
               dataKey="minutes"
               radius={[4, 4, 0, 0]}

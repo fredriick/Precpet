@@ -10,6 +10,21 @@ interface FluidityTrendChartProps {
   sessions: PracticeSession[]
 }
 
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; label: string; score: number } }> }) {
+  const { t } = useI18n()
+  if (active && payload && payload.length) {
+    const d = payload[0].payload
+    return (
+      <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
+        <p className="font-medium text-foreground">{d.name}</p>
+        <p className="text-xs text-muted-foreground">{d.label}</p>
+        <p className="text-primary font-mono mt-1">{t("fluidity.avg", { score: d.score })}</p>
+      </div>
+    )
+  }
+  return null
+}
+
 export function FluidityTrendChart({ sessions }: FluidityTrendChartProps) {
   const { t } = useI18n()
 
@@ -32,20 +47,6 @@ export function FluidityTrendChart({ sessions }: FluidityTrendChartProps) {
     return null
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const d = payload[0].payload
-      return (
-        <div className="bg-card border border-border rounded-xl px-3 py-2 text-sm shadow-lg">
-          <p className="font-medium text-foreground">{d.name}</p>
-          <p className="text-xs text-muted-foreground">{d.label}</p>
-          <p className="text-primary font-mono mt-1">{t("fluidity.avg", { score: d.score })}</p>
-        </div>
-      )
-    }
-    return null
-  }
-
   return (
     <div className="rounded-2xl bg-card border border-border p-5">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">{t("fluidity.trend")}</h3>
@@ -55,7 +56,7 @@ export function FluidityTrendChart({ sessions }: FluidityTrendChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.2 0.01 260)" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.6 0 0)", fontSize: 11 }} dy={6} />
             <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.6 0 0)", fontSize: 11 }} dx={-4} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<ChartTooltip />} />
             <Line
               type="monotone"
               dataKey="score"

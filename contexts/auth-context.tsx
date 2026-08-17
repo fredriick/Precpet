@@ -105,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: "Check your email to confirm your account before signing in." }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      // eslint-disable-next-line no-console
       console.error("[auth] signUp failed:", err)
       return { error: `Could not reach the server (${message}). Check your connection.` }
     }

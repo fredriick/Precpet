@@ -18,7 +18,7 @@ import {
   COMMAND_SET_RATE,
   PACKET_SIZE,
 } from "@/lib/wearable-protocol"
-import type { ImuSample, WearableSessionSummary, WearableStoredSession } from "@/lib/wearable-protocol"
+import type { ImuSample, WearableSessionSummary } from "@/lib/wearable-protocol"
 
 describe("wearable protocol", () => {
   describe("encode/decode round-trip", () => {

@@ -18,7 +18,6 @@ import {
   PRECEPT_BATTERY_CHARACTERISTIC_UUID,
   PRECEPT_SESSION_DATA_CHARACTERISTIC_UUID,
   buildCommandPacket,
-  buildSessionIndexJson,
   bytesToBase64,
   encodeImuPacket,
   parseSessionIndex,

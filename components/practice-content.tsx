@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
 import { MotionIndicator } from "@/components/motion-indicator"
@@ -12,7 +12,7 @@ import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
 import { getSkillById, allSkills, getSkillsBySport } from "@/lib/skills-database"
 import { celebratoryFeedback } from "@/lib/feedback"
-import { markProgramStepComplete, getProgramProgress, initProgramProgress, savePracticeSession } from "@/lib/storage"
+import { markProgramStepComplete, initProgramProgress, savePracticeSession } from "@/lib/storage"
 import { trainingPrograms } from "@/lib/programs-database"
 import { VideoRecorder } from "@/components/video-recorder"
 import { useVideoAnalysis } from "@/hooks/use-video-analysis"
@@ -581,7 +581,7 @@ export function PracticeContent() {
               <button onClick={() => setFullSkillList(false)} className="text-xs text-primary hover:underline">← {t("session.back")}</button>
             </div>
             {filteredSkills.map((skill, i) => (
-              <button
+                      <button
                 key={skill.id}
                 onClick={() => selectSkill(skill)}
                 className={cn(
@@ -629,7 +629,7 @@ export function PracticeContent() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {filteredSkills.map((skill, i) => (
+            {filteredSkills.map((skill, i) => (
                     <button
                       key={skill.id}
                       onClick={() => selectSkill(skill)}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
-import type { UserStats, PracticeSession } from "@/lib/types"
+import type { PracticeSession } from "@/lib/types"
 
 function createMockStorage() {
   const store = new Map<string, string>()
@@ -148,7 +148,7 @@ describe("storage", () => {
   })
 
   describe("export / import", async () => {
-    const { exportUserData, importUserData, getUserStats, saveUserStats, getPracticeSessions } = await import("@/lib/storage")
+    const { exportUserData, importUserData, getUserStats, saveUserStats } = await import("@/lib/storage")
 
     it("exports and imports data successfully", () => {
       saveUserStats({ ...getUserStats(), matchesPlayed: 10 })
@@ -183,7 +183,7 @@ describe("storage", () => {
   })
 
   describe("completePracticeSession", async () => {
-    const { completePracticeSession, getUserStats, getPracticeSessions } = await import("@/lib/storage")
+    const { completePracticeSession, getUserStats } = await import("@/lib/storage")
 
     it("completes a session and updates stats", () => {
       const session: PracticeSession = {

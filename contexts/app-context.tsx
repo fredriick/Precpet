@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
-import type { UserStats, PracticeSession, ProgramProgress, Sport } from "@/lib/types"
+import type { UserStats, PracticeSession, Sport } from "@/lib/types"
 import type { UserSettings } from "@/lib/storage"
 import {
   getUserStats,
@@ -17,10 +17,6 @@ import {
   toggleBookmark as toggleBookmarkStorage,
   unlockAchievement as unlockAchievementStorage,
   updateStreak as updateStreakStorage,
-  getAllProgramProgress,
-  saveProgramProgress,
-  getGeneratedVideos,
-  saveGeneratedVideo,
 } from "@/lib/storage"
 import { celebratoryFeedback, playSound } from "@/lib/feedback"
 import { getAchievementById, checkAchievementUnlock, achievements as allAchievements } from "@/lib/achievements-database"
@@ -32,8 +28,6 @@ import {
   saveCloudStats,
   saveCloudSettings,
   saveCloudSession,
-  saveCloudProgramProgress,
-  saveCloudVideo,
 } from "@/lib/cloud-sync"
 
 export const SESSION_LIMIT = 50
@@ -211,6 +205,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [user],
   )
 
+  const unlockAchievement = useCallback(
+    (achievementId: string) => {
+      const updated = unlockAchievementStorage(achievementId)
+      if (updated.achievements.length > achievementsRef.current.length) {
+        celebratoryFeedback()
+        const achievement = getAchievementById(achievementId)
+        if (achievement) {
+          setToastAchievement(achievement)
+        }
+      }
+      achievementsRef.current = [...updated.achievements]
+      setUserStats(updated)
+      if (user) void saveCloudStats(user.id, updated).catch(() => {})
+    },
+    [user],
+  )
+
   const finishSession = useCallback(
     (session: PracticeSession, fluidityScores: number[], notes?: string) => {
       const { session: completed, stats } = completePracticeSession(session, fluidityScores, notes)
@@ -239,7 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         newAchievements.forEach((id) => unlockAchievement(id))
       }
     },
-    [user],
+    [user, unlockAchievement],
   )
 
   const markSkillLearned = useCallback(
@@ -274,23 +285,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleBookmark = useCallback(
     (skillId: string) => {
       const updated = toggleBookmarkStorage(skillId)
-      setUserStats(updated)
-      if (user) void saveCloudStats(user.id, updated).catch(() => {})
-    },
-    [user],
-  )
-
-  const unlockAchievement = useCallback(
-    (achievementId: string) => {
-      const updated = unlockAchievementStorage(achievementId)
-      if (updated.achievements.length > achievementsRef.current.length) {
-        celebratoryFeedback()
-        const achievement = getAchievementById(achievementId)
-        if (achievement) {
-          setToastAchievement(achievement)
-        }
-      }
-      achievementsRef.current = [...updated.achievements]
       setUserStats(updated)
       if (user) void saveCloudStats(user.id, updated).catch(() => {})
     },
