@@ -17,7 +17,14 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee "$RUNNER_TEMP/install.log" || {
+            tail -n 40 "$RUNNER_TEMP/install.log" | sed ':a;N;$!ba;s/\n/%0A/g' > "$RUNNER_TEMP/err.txt"
+            echo "::error title=npm ci failed::$(cat "$RUNNER_TEMP/err.txt")"
+            cat "$RUNNER_TEMP/install.log"
+            exit 1
+          }
 
       - name: Generate Prisma client
         run: npx prisma generate
