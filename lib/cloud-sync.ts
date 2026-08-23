@@ -44,8 +44,14 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
 
   const programMap: Record<string, ProgramProgress> = {}
   for (const p of programs ?? []) {
-    const { user_id, ...rest } = p as Record<string, unknown>
-    programMap[p.program_id as string] = rest as unknown as ProgramProgress
+    const row = p as Record<string, unknown>
+    programMap[row.program_id as string] = {
+      completedSteps: (row.completed_steps as number) ?? 0,
+      totalSteps: (row.total_steps as number) ?? 0,
+      startedAt: row.started_at as string,
+      completedAt: (row.completed_at as string) ?? undefined,
+      lastPracticed: (row.last_practiced as string) ?? undefined,
+    }
   }
 
   const videoMap: Record<string, string> = {}
@@ -110,7 +116,9 @@ export async function loadCloudSnapshot(userId: string): Promise<CloudSnapshot |
         practiceReminders: (settings as Record<string, unknown>).practice_reminders as boolean,
         preferredDifficulty: (settings as Record<string, unknown>).preferred_difficulty as UserSettings["preferredDifficulty"],
         preferredSport: (settings as Record<string, unknown>).preferred_sport as UserSettings["preferredSport"],
-        preferredSports: ((settings as Record<string, unknown>).preferred_sports as UserSettings["preferredSports"]) || [(settings as Record<string, unknown>).preferred_sport as Sport] || ["soccer"],
+        preferredSports: (((settings as Record<string, unknown>).preferred_sports as UserSettings["preferredSports"])?.length
+          ? ((settings as Record<string, unknown>).preferred_sports as UserSettings["preferredSports"])
+          : [((settings as Record<string, unknown>).preferred_sport as Sport) || "soccer"]),
         activeSport: ((settings as Record<string, unknown>).active_sport as Sport) || ((settings as Record<string, unknown>).preferred_sport as Sport) || "soccer",
         theme: (settings as Record<string, unknown>).theme as UserSettings["theme"],
         weeklyGoalMinutes: (settings as Record<string, unknown>).weekly_goal_minutes as number,
