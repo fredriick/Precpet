@@ -580,7 +580,7 @@ export function PracticeContent() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("practice.allSkills")}</h2>
               <button onClick={() => setFullSkillList(false)} className="text-xs text-primary hover:underline">← {t("session.back")}</button>
             </div>
-            {filteredSkills.map((skill, i) => (
+            {filteredSkills.map((skill) => (
                       <button
                 key={skill.id}
                 onClick={() => selectSkill(skill)}

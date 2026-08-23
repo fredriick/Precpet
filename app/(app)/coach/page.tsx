@@ -134,7 +134,7 @@ export default function CoachPage() {
         return refresh()
       })
       .catch((err) => setError(err instanceof Error ? err.message : t("coach.claimError")))
-  }, [searchParams, refresh])
+  }, [searchParams, refresh, t])
 
   // Auto-complete claimed assignments once the skill is learned.
   useEffect(() => {

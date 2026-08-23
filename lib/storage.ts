@@ -404,14 +404,12 @@ export function updateStreak(): UserStats {
   return stats
 }
 
-export function getStreakStatus(): {
+export function getStreakStatus(stats = getUserStats()): {
   current: number
   longest: number
   daysUntilBreak: number
   isActive: boolean
 } {
-  const stats = getUserStats()
-
   if (!stats.lastPracticeDate) {
     return { current: 0, longest: 0, daysUntilBreak: 0, isActive: false }
   }

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { prompt, skillId } = parsed.data
+    const { prompt } = parsed.data
 
     if (!GEMINI_API_KEY) {
       return NextResponse.json({

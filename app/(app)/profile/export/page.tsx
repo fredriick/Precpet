@@ -51,12 +51,14 @@ export default function ExportPage() {
             if (result.success) {
                 setStatus({ type: "success", message: t("export.imported") })
                 setTimeout(() => {
+                    // Full reload intentionally resets all in-memory state after import.
+                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                     window.location.href = "/dashboard"
                 }, 1500)
             } else {
                 setStatus({ type: "error", message: t("export.invalidFormat") })
             }
-        } catch (e) {
+        } catch {
             setStatus({ type: "error", message: t("export.importError") })
         }
     }
@@ -64,6 +66,8 @@ export default function ExportPage() {
     const handleClear = () => {
         if (confirm(t("export.confirmClear"))) {
             clearAllData()
+            // Full reload intentionally resets all in-memory state after clearing.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = "/dashboard"
         }
     }

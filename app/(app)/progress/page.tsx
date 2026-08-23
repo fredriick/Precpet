@@ -18,7 +18,7 @@ type Tab = "stats" | "achievements" | "history"
 type SportFilter = Sport | "all"
 
 export default function ProgressPage() {
-  const { userStats, sessions, settings, activeSport } = useApp()
+  const { userStats, sessions, activeSport } = useApp()
   const { user } = useAuth()
   const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<Tab>("stats")

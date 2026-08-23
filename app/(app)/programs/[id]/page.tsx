@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import type { ReactNode } from "react"
 import { trainingPrograms } from "@/lib/programs-database"
 import { getProgramProgress, resetProgramProgress, initProgramProgress } from "@/lib/storage"
 import { useI18n } from "@/hooks/use-i18n"
@@ -15,7 +14,6 @@ export default function ProgramDetailPage() {
   const { t } = useI18n()
   const program = trainingPrograms.find((p) => p.id === id)
   const [progress, setProgress] = useState(() => getProgramProgress(id))
-  const [animatingStep, setAnimatingStep] = useState<number | null>(null)
 
   useEffect(() => {
     if (program) {
@@ -134,7 +132,6 @@ export default function ProgramDetailPage() {
                     isCompleted && "border-emerald-500/30 bg-emerald-500/5",
                     isCurrent && "border-primary/50 bg-primary/5 cursor-pointer hover:border-primary",
                     isFuture && "border-border bg-card opacity-60",
-                    animatingStep === i && "scale-[1.02] border-primary",
                   )}
                   onClick={() => (isCurrent ? handlePracticeStep(i) : null)}
                 >

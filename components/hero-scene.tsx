@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useState, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
-import { MeshDistortMaterial, MeshTransmissionMaterial } from "@react-three/drei"
+import { MeshDistortMaterial } from "@react-three/drei"
 import * as THREE from "three"
 
 interface SportsProps {
@@ -40,9 +40,8 @@ function Field({ scrollProgress = 0 }: { scrollProgress: number }) {
     texRef.current = new THREE.CanvasTexture(c)
   }
 
-  useFrame((state) => {
+  useFrame(() => {
     if (!meshRef.current) return
-    const t = state.clock.getElapsedTime()
     const s = scrollProgress
     meshRef.current.scale.setScalar(6 + s * 4)
     meshRef.current.position.z = -3 - s * 6
@@ -179,7 +178,7 @@ function SpeedTrails({ scrollProgress = 0 }: { scrollProgress: number }) {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute("position", new THREE.BufferAttribute(posArray, 3))
     return geo
-  }, [])
+  }, [posArray])
 
   return (
     <points ref={ref} geometry={geometry}>
@@ -256,7 +255,7 @@ function BurstParticles({ scrollProgress = 0 }: { scrollProgress: number }) {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute("position", new THREE.BufferAttribute(posArray, 3))
     return geo
-  }, [])
+  }, [posArray])
 
   useFrame((state) => {
     if (!ref.current) return
@@ -293,14 +292,14 @@ function AmbientParticles({ mouse, scrollProgress = 0 }: SportsProps) {
     }
     return pos
   }, [])
-  const initialPos = useMemo(() => new Float32Array(posArray), [])
+  const initialPos = useMemo(() => new Float32Array(posArray), [posArray])
 
   const ref = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute("position", new THREE.BufferAttribute(posArray, 3))
     return geo
-  }, [])
+  }, [posArray])
 
   useFrame((state) => {
     if (!ref.current) return

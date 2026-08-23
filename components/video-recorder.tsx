@@ -134,7 +134,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName }: Vi
     } catch {
       setError(t("recorder.cameraDenied"))
     }
-  }, [])
+  }, [t])
 
   const stopRecording = useCallback(() => {
     if (timerRef.current) {
@@ -195,7 +195,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName }: Vi
     setRecordedBlob(file)
     setRecordedUrl(URL.createObjectURL(file))
     setView("preview")
-  }, [])
+  }, [t])
 
   const handleConfirm = useCallback(async () => {
     if (!recordedBlob) return
@@ -207,7 +207,7 @@ export function VideoRecorder({ mode, onVideoSelected, onCancel, skillName }: Vi
       setError(t("recorder.processFailed"))
       setView("preview")
     }
-  }, [recordedBlob, onVideoSelected])
+  }, [recordedBlob, onVideoSelected, t])
 
   const handleRetake = useCallback(() => {
     if (recordedUrl) URL.revokeObjectURL(recordedUrl)

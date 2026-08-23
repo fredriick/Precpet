@@ -68,7 +68,7 @@ export function ClubLeaderboardCard({
         if (err?.name !== "AbortError") setError(t("club.loadError"))
       })
     return () => controller.abort()
-  }, [club?.id, userMinutes, userName, sport, t])
+  }, [club, userMinutes, userName, sport, t])
 
   const handleCreate = async () => {
     if (busy || name.trim().length < 2) return

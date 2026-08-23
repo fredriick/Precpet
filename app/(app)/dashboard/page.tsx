@@ -221,7 +221,7 @@ export default function HomePage() {
 
   const dailyTip = useMemo(() => getDailyTip(preferredSport), [preferredSport])
 
-  const streakStatus = useMemo(() => getStreakStatus(), [sessions])
+  const streakStatus = useMemo(() => getStreakStatus(userStats), [userStats])
   useStreakReminder({
     enabled: settings.practiceReminders,
     streakActive: streakStatus.isActive,

@@ -3,12 +3,14 @@ import coreWebVitals from "eslint-config-next/core-web-vitals"
 import typescript from "eslint-config-next/typescript"
 
 const config = [
-  { ignores: ["ios/", "wearos/"] },
+  { ignores: ["ios/", "wearos/", "coverage/"] },
   ...nextConfig,
   ...coreWebVitals,
   ...typescript,
   {
     rules: {
+      // Allow `const { omitted, ...rest } = obj` field-stripping idiom.
+      "@typescript-eslint/no-unused-vars": ["warn", { ignoreRestSiblings: true }],
       // React Compiler rules — flag standard patterns (setState in useEffect,
       // Math.random in render, ref reads during render). Enable when the project
       // opts into the React Compiler.
