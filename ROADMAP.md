@@ -66,6 +66,13 @@ their watch while the phone stays in a bag on the sideline.
     over BLE, reached through the shipped iOS receiver app (the native iOS
     shell already scans/connects any Precept peripheral; iOS blocks Web
     Bluetooth, so a PWA-only path is impossible on iPhone).
+  - ✅ **Scaffold + parity check:** `watchos/` is a source scaffold that was
+    line-by-line diffed against the Kotlin reference on Windows (protocol,
+    BLE/GATT, motion math, recorder, session store — all matching; one bug,
+    `motion.start()` never called, found and fixed in `2b73a09`). See
+    `watchos/README.md` → "Parity status".
+  - ⏳ **Compile + validate on macOS/Xcode** (only remaining Mac work; anchors
+    for likely API drift are marked `// PARITY-FIXME` in the Swift sources).
 
 - **Phase C — Garmin / Fitbit**
   - Vendor BLE passthrough and health SDKs (e.g. Samsung Health Sensor SDK for

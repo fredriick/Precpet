@@ -48,6 +48,8 @@ final class PreceptBlePeripheral: NSObject, CBPeripheralManagerDelegate {
 
     func start() {
         guard manager == nil else { return }
+        // PARITY-FIXME: confirm `CBPeripheralManager(delegate:queue:)` init on
+        // watchOS; an `options` dictionary (e.g. restore identifier) is optional.
         let manager = CBPeripheralManager(delegate: self, queue: .main)
         self.manager = manager
         // Service/characteristic setup happens once the manager is powered on.

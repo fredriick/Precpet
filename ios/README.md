@@ -21,7 +21,9 @@ It is a native shell around the deployed Precept PWA:
 
 No protocol logic lives in Swift — the web layer generates command bytes and
 decodes packets, so the two platforms can't drift (Swift only joins chunk
-fragments back into a UTF-8 string).
+fragments back into a UTF-8 string). This chunk reassembly was cross-checked
+against the TypeScript chunker and the Kotlin side during the watchOS parity
+diff (`lib/wearable-protocol.ts`, `SessionChunker.kt`) and matches.
 
 ## Prerequisites
 

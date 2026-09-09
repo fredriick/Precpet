@@ -28,6 +28,8 @@ final class MotionSensorService {
         packetsEncoded = 0
 
         motionManager.deviceMotionUpdateInterval = 1.0 / sampleRateHz
+        // PARITY-FIXME: verify `startDeviceMotionUpdates(to:withHandler:)` is the
+        // correct watchOS call-site; `operationQueue` may need a non-.main queue.
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
             guard let self, self.isRunning, let motion else { return }
             self.handle(motion)

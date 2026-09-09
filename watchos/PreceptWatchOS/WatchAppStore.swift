@@ -2,6 +2,8 @@ import SwiftUI
 import CoreMotion
 
 @main
+// PARITY-FIXME(xcode-template): `@main` App shell may need adapting to the
+// watchOS project template (or split into its own PreceptWatchOSApp.swift).
 struct PreceptWatchOSApp: App {
     @StateObject private var store = WatchAppStore()
 
